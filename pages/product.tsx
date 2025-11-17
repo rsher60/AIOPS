@@ -12,22 +12,24 @@ function ConsultationForm() {
     const { getToken } = useAuth();
 
     // Form state
-    const [patientName, setPatientName] = useState('');
-    const [visitDate, setVisitDate] = useState<Date | null>(new Date());
-    const [notes, setNotes] = useState('');
+    const [applicantName, setApplicantName] = useState('');
+    const [applicationDate, setApplicationDate] = useState<Date | null>(new Date());
+    const [roleAppliedFor, setRoleAppliedFor] = useState('');
+    const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Streaming state
     const [output, setOutput] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     // Connection management
     const controllerRef = useRef<AbortController | null>(null);
     const isConnectingRef = useRef(false);
 
     const connectWithFreshToken = async (formData: {
-        patient_name: string;
-        date_of_visit: string;
-        notes: string;
+        applicant_name: string;
+        application_date: string;
+        role_applied_for: string;
+        additional_notes: string;
     }) => {
         if (isConnectingRef.current) return;
         isConnectingRef.current = true;
@@ -130,9 +132,10 @@ function ConsultationForm() {
 
         // Prepare form data
         const formData = {
-            patient_name: patientName,
-            date_of_visit: visitDate?.toISOString().slice(0, 10) || '',
-            notes,
+            applicant_name: applicantName,
+            application_date: applicationDate?.toISOString().slice(0, 10) || '',
+            role_applied_for: roleAppliedFor,
+            additional_notes: additionalNotes,
         };
 
         // Start connection with fresh token
@@ -148,36 +151,49 @@ function ConsultationForm() {
         };
     }, []);
 
+    // Download resume as markdown file
+    const downloadResume = () => {
+        const blob = new Blob([output], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `resume_${applicantName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.md`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="container mx-auto px-4 py-12 max-w-3xl">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-8">
-                Consultation Notes
+                Resume Application
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
                 <div className="space-y-2">
-                    <label htmlFor="patient" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Patient Name
+                    <label htmlFor="applicant" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Applicant Name
                     </label>
                     <input
-                        id="patient"
+                        id="applicant"
                         type="text"
                         required
-                        value={patientName}
-                        onChange={(e) => setPatientName(e.target.value)}
+                        value={applicantName}
+                        onChange={(e) => setApplicantName(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter patient's full name"
+                        placeholder="Enter your full name"
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Date of Visit
+                        Date of Application
                     </label>
                     <DatePicker
                         id="date"
-                        selected={visitDate}
-                        onChange={(d: Date | null) => setVisitDate(d)}
+                        selected={applicationDate}
+                        onChange={(d: Date | null) => setApplicationDate(d)}
                         dateFormat="yyyy-MM-dd"
                         placeholderText="Select date"
                         required
@@ -186,31 +202,61 @@ function ConsultationForm() {
                 </div>
 
                 <div className="space-y-2">
-                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Consultation Notes
+                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Role Applied For
                     </label>
-                    <textarea
-                        id="notes"
+                    <input
+                        id="role"
+                        type="text"
                         required
-                        rows={8}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        value={roleAppliedFor}
+                        onChange={(e) => setRoleAppliedFor(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter detailed consultation notes..."
+                        placeholder="e.g., Senior Software Engineer"
                     />
                 </div>
 
-                <button 
-                    type="submit" 
+                <div className="space-y-2">
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Additional Notes from Applicant
+                    </label>
+                    <textarea
+                        id="notes"
+                        rows={8}
+                        value={additionalNotes}
+                        onChange={(e) => setAdditionalNotes(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="Any additional information, skills, achievements, or special requirements..."
+                    />
+                </div>
+
+                <button
+                    type="submit"
                     disabled={loading}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
                 >
-                    {loading ? 'Generating Summary...' : 'Generate Summary'}
+                    {loading ? 'Generating Resume...' : 'Generate Resume'}
                 </button>
             </form>
 
             {output && (
                 <section className="mt-8 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                            Generated Resume
+                        </h2>
+                        {!loading && (
+                            <button
+                                onClick={downloadResume}
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download
+                            </button>
+                        )}
+                    </div>
                     <div className="markdown-content prose prose-blue dark:prose-invert max-w-none">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                             {output}

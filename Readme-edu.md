@@ -359,3 +359,18 @@
   ---
   This documentation covers the complete flow from user interaction to API response for all endpoints in your
   healthcare consultation application.
+
+
+## Important POints
+
+
+### If you are getting an error where Port is occupied.
+
+# Find what's using port 8000
+sudo lsof -i :8000
+
+# Or using netstat
+sudo netstat -tulpn | grep :8000
+
+# Kill the process (replace PID with actual process ID)
+kill -9 PID

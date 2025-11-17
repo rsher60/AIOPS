@@ -23,43 +23,48 @@ app.add_middleware(
 clerk_config = ClerkConfig(jwks_url=os.getenv("CLERK_JWKS_URL"))
 clerk_guard = ClerkHTTPBearer(clerk_config)
 
-class Visit(BaseModel):
-    patient_name: str
-    date_of_visit: str
-    notes: str
+class ResumeRequest(BaseModel):
+    applicant_name: str
+    application_date: str
+    role_applied_for: str
+    additional_notes: str
 
 system_prompt = """
-You are provided with notes written by a doctor from a patient's visit.
-Your job is to summarize the visit for the doctor and provide an email.
-Reply with exactly three sections with the headings:
-### Summary of visit for the doctor's records
-### Next steps for the doctor
-### Draft of email to patient in patient-friendly language
+You are a professional resume writer and career advisor.
+You are provided with an applicant's information for a job application.
+Your job is to create a professional resume tailored to the role they are applying for.
+
+Generate a comprehensive resume with the following sections:
+### Professional Summary
+### Key Skills
+### Tailored Resume Points for the Role
+### Suggestions for Improvement
 """
 
-def user_prompt_for(visit: Visit) -> str:
-    return f"""Create the summary, next steps and draft email for:
-Patient Name: {visit.patient_name}
-Date of Visit: {visit.date_of_visit}
-Notes:
-{visit.notes}"""
+def user_prompt_for(request: ResumeRequest) -> str:
+    return f"""Create a professional resume for:
+Applicant Name: {request.applicant_name}
+Application Date: {request.application_date}
+Role Applied For: {request.role_applied_for}
+Additional Notes from Applicant:
+{request.additional_notes if request.additional_notes else "None provided"}"""
 
 @app.post("/api/consultation")
 def consultation_summary(
-    visit: Visit,
+    request: ResumeRequest,
     creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
 ):
     user_id = creds.decoded["sub"]
     client = OpenAI()
-    
-    user_prompt = user_prompt_for(visit)
+
+    user_prompt = user_prompt_for(request)
     prompt = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
     
     stream = client.chat.completions.create(
-        model="gpt-5-nano",
+        model="gpt-4o-mini",
         messages=prompt,
         stream=True,
     )
