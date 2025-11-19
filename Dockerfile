@@ -18,6 +18,9 @@ ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 # The NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is meant to be public (it starts with pk_)
 # It's safe to include in the build as it's designed for client-side use
 
+# Set NODE_ENV to production for static export
+ENV NODE_ENV=production
+
 # Build the Next.js app (creates 'out' directory with static files)
 RUN npm run build
 

@@ -374,3 +374,47 @@ sudo netstat -tulpn | grep :8000
 
 # Kill the process (replace PID with actual process ID)
 kill -9 PID
+
+
+
+   
+
+docker build --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" -t consultation-app . 
+
+
+
+docker run -p 8000:8000 -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" -e CLERK_JWKS_URL="$CLERK_JWKS_URL" -e OPENAI_API_KEY="$OPENAI_API_KEY" consultation-app
+
+
+
+## One of the issues I was facing when trying to sync the changes of the code base with docker 
+
+ 🔍 The Problem:
+
+  1. Docker Compose was mounting old static files from ./out:/app/static
+  2. The out/ directory had stale files from Nov 16 13:44 (hours old)
+  3. Even after rebuilding, Docker was using the old mounted files instead of the newly built ones
+
+  ✅ The Fix:
+
+  1. Deleted the old out/ directory with stale files
+  2. Removed the volume mount for static files in docker-compose.yaml
+  3. Rebuilt with --no-cache to ensure fresh build
+
+  🚀 Now Access Your App:
+
+  URL: http://localhost:8000
+
+  Important: Do a hard refresh in your browser:
+  - Mac: Cmd + Shift + R
+  - Windows/Linux: Ctrl + Shift + R
+
+  You should now see "ResumeGenerator Pro" with the latest changes!
+
+  ---
+  📝 Key Takeaway:
+
+  When using Docker Compose, avoid mounting the out/ directory as a volume. Let Docker build it fresh each time. The
+   volume mount is only useful for hot-reloading backend code (server.py), not static frontend files.
+
+  Try it now - the latest version should be live! 🎉

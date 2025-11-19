@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      # Mount the FastAPI backend code for hot reload
+      - ./api/server.py:/app/server.py
+    command: uvicorn server:app --host 0.0.0.0 --port 8000 --reload
