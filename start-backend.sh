@@ -14,4 +14,4 @@ fi
 
 # Start FastAPI with uvicorn
 cd api
-../venv/bin/python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000
+../venv/bin/python -m uvicorn server:app --reload --host 127.0.0.1 --port 8000

@@ -20,10 +20,10 @@ chmod +x run-dev.sh
 ```
 
 This will start:
-- **FastAPI** on `http://localhost:8000` (with auto-reload)
-- **Next.js** on `http://localhost:3000` (with hot reload)
+- **FastAPI** on `http://127.0.0.1:8000` (with auto-reload)
+- **Next.js** on `http://127.0.0.1:3000` (with hot reload)
 
-Access your app at: **http://localhost:3000**
+Access your app at: **http://127.0.0.1:3000**
 
 ### Option 2: Manual Startup
 
@@ -34,7 +34,7 @@ source .env.local
 
 # Start FastAPI with auto-reload
 cd api
-python3 -m uvicorn server:app --reload --host 0.0.0.0 --port 8000
+python3 -m uvicorn server:app --reload --host 127.0.0.1 --port 8000
 ```
 
 **Terminal 2 - Start Next.js Frontend:**
@@ -80,11 +80,11 @@ npm run dev
 ┌─────────────────────────────────────────────┐
 │          DEVELOPMENT (Local)                │
 │                                             │
-│  Browser → localhost:3000 (Next.js)         │
+│  Browser → 127.0.0.1:3000 (Next.js)         │
 │              ↓                              │
 │         /api/* requests                     │
 │              ↓                              │
-│  Proxied → localhost:8000 (FastAPI)         │
+│  Proxied → 127.0.0.1:8000 (FastAPI)         │
 │                                             │
 │  ✅ Hot reload on all changes               │
 └─────────────────────────────────────────────┘
@@ -92,7 +92,7 @@ npm run dev
 ┌─────────────────────────────────────────────┐
 │        PRODUCTION (Docker)                  │
 │                                             │
-│  Browser → localhost:8000 (FastAPI)         │
+│  Browser → 127.0.0.1:8000 (FastAPI)         │
 │              ↓                              │
 │         Serves static files                 │
 │         AND API endpoints                   │
@@ -121,7 +121,7 @@ OPENAI_API_KEY=sk-proj-...
 ```
 
 ### API Calls Failing (403 or Connection Refused)
-1. Check FastAPI is running on port 8000: `curl http://localhost:8000/health`
+1. Check FastAPI is running on port 8000: `curl http://127.0.0.1:8000/health`
 2. Check environment variables are loaded
 3. Check Clerk keys are valid
 
@@ -142,7 +142,7 @@ source .env.local && docker build \
 # Run the container
 docker run -p 8000:8000 --env-file .env.local consultation-app
 
-# Access at http://localhost:8000
+# Access at http://127.0.0.1:8000
 ```
 
 ## Stop All Development Servers
@@ -159,4 +159,4 @@ If running manually:
 2. **Use `.env.local`** - Never commit this file (it's in `.gitignore`)
 3. **Test Docker builds** before deploying
 4. **Check both terminals** for errors when debugging
-5. **Use FastAPI docs** at `http://localhost:8000/docs` for API testing
+5. **Use FastAPI docs** at `http://127.0.0.1:8000/docs` for API testing

@@ -21,7 +21,7 @@ npm run dev:backend
 npm run dev
 ```
 
-Access at: **http://localhost:3000**
+Access at: **http://127.0.0.1:3000**
 
 ### Production (Docker)
 
@@ -35,7 +35,7 @@ source .env.local && npm run build:docker
 npm run start:docker
 ```
 
-Access at: **http://localhost:8000**
+Access at: **http://127.0.0.1:8000**
 
 ## Features
 
@@ -102,7 +102,7 @@ OPENAI_API_KEY=sk-proj-...
 
 1. **Make changes** to any `.tsx` or `.py` files
 2. **Save** - changes automatically reload
-3. **Test** at http://localhost:3000
+3. **Test** at http://127.0.0.1:3000
 4. **Build Docker** only when ready to deploy
 
 No Docker rebuilds needed during development! 🎉

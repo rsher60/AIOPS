@@ -4,5 +4,6 @@ uvicorn
 openai
 fastapi-clerk-auth
 pydantic
-
+huggingface_hub
+python-dotenv
 

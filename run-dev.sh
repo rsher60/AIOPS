@@ -19,7 +19,7 @@ fi
 # Start FastAPI in background
 echo "🐍 Starting FastAPI server on port 8000..."
 cd api
-python3 -m uvicorn server:app --reload --host 0.0.0.0 --port 8000 &
+python3 -m uvicorn server:app --reload --host 127.0.0.1 --port 8000 &
 FASTAPI_PID=$!
 cd ..
 
@@ -33,9 +33,9 @@ NEXTJS_PID=$!
 
 echo ""
 echo "✨ Development servers running:"
-echo "   - Frontend: http://localhost:3000"
-echo "   - Backend:  http://localhost:8000"
-echo "   - API Docs: http://localhost:8000/docs"
+echo "   - Frontend: http://127.0.0.1:3000"
+echo "   - Backend:  http://127.0.0.1:8000"
+echo "   - API Docs: http://127.0.0.1:8000/docs"
 echo ""
 echo "Press Ctrl+C to stop all servers"
 

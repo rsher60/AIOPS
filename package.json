@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:backend": "cd api && python3 -m uvicorn server:app --reload --host 0.0.0.0 --port 8000",
+    "dev:backend": "cd api && python3 -m uvicorn server:app --reload --host 127.0.0.1 --port 8000",
     "dev:all": "./run-dev.sh",
     "build": "next build",
     "build:docker": "docker build --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY -t consultation-app .",

@@ -8,13 +8,15 @@ import remarkBreaks from 'remark-breaks';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { UserButton } from '@clerk/nextjs';
 
-function ConsultationForm() {
+function ResumeGenerationForm() {
     const { getToken } = useAuth();
 
     // Form state
     const [applicantName, setApplicantName] = useState('');
+    const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
     const [applicationDate, setApplicationDate] = useState<Date | null>(new Date());
     const [roleAppliedFor, setRoleAppliedFor] = useState('');
+    const [YourPhoneNumber, setYourPhoneNumber] = useState('');
     const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Streaming state
@@ -29,7 +31,9 @@ function ConsultationForm() {
         applicant_name: string;
         application_date: string;
         role_applied_for: string;
+        phone_number: string;
         additional_notes: string;
+        model: string;
     }) => {
         if (isConnectingRef.current) return;
         isConnectingRef.current = true;
@@ -135,7 +139,9 @@ function ConsultationForm() {
             applicant_name: applicantName,
             application_date: applicationDate?.toISOString().slice(0, 10) || '',
             role_applied_for: roleAppliedFor,
+            phone_number: YourPhoneNumber,
             additional_notes: additionalNotes,
+            model: selectedModel,
         };
 
         // Start connection with fresh token
@@ -187,6 +193,22 @@ function ConsultationForm() {
                 </div>
 
                 <div className="space-y-2">
+                    <label htmlFor="model" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        AI Model
+                    </label>
+                    <select
+                        id="model"
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    >
+                        <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
+                        <option value="grok-beta">Grok Beta (xAI)</option>
+                        <option value="llama-70b">Llama 3.1 70B Instruct (Hugging Face)</option>
+                    </select>
+                </div>
+
+                <div className="space-y-2">
                     <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Date of Application
                     </label>
@@ -213,6 +235,20 @@ function ConsultationForm() {
                         onChange={(e) => setRoleAppliedFor(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                         placeholder="e.g., Senior Software Engineer"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Your Phone Number
+                    </label>
+                    <input
+                        id="phone"
+                        type="tel"
+                        required
+                        value={YourPhoneNumber}
+                        onChange={(e) => setYourPhoneNumber(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        placeholder="e.g., +1 (555) 123-4567"
                     />
                 </div>
 
@@ -276,7 +312,7 @@ export default function Product() {
                 <UserButton showName={true} />
             </div>
 
-            <ConsultationForm />
+            <ResumeGenerationForm />
         </main>
     );
 }

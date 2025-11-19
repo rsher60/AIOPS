@@ -14,7 +14,7 @@
   Docker Container Initialization
 
   - File: Dockerfile
-  - Entry Point: CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+  - Entry Point: CMD ["uvicorn", "server:app", "--host", "127.0.0.1", "--port", "8000"]
 
   Flow:
   1. Docker container starts
@@ -30,12 +30,12 @@
   7. Static file serving configured (lines 85-93):
     - Mounts Next.js static files from ./static directory
     - Sets up catch-all route for SPA routing
-  8. Server starts listening on 0.0.0.0:8000
+  8. Server starts listening on 127.0.0.1:8000
 
   ---
   2. ENDPOINT: GET / (Homepage)
 
-  User Action: Navigates to http://localhost:8000/
+  User Action: Navigates to http://127.0.0.1:8000/
 
   Flow:
   1. FastAPI (api/server.py:88-90)
@@ -82,9 +82,9 @@
 
   4. Main Component (lines 223-234):
     - Renders <UserButton> in top-right (lines 227-229)
-    - Renders <ConsultationForm> component (line 231)
+    - Renders <ResumeGenerationForm> component (line 231)
 
-  ConsultationForm Component (lines 11-221):
+  ResumeGenerationForm Component (lines 11-221):
 
   State Initialization (lines 13-26):
     - useAuth() hook gets Clerk authentication context (line 13)
@@ -244,7 +244,7 @@
   User/System Action: AWS App Runner or monitoring system checks health
 
   Flow:
-  1. Request: GET http://localhost:8000/health
+  1. Request: GET http://127.0.0.1:8000/health
   2. FastAPI (api/server.py:79-82)
     - Executes health_check() function
     - Returns JSON: {"status": "healthy"}
@@ -403,7 +403,7 @@ docker run -p 8000:8000 -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" -e CLERK_JWKS_UR
 
   🚀 Now Access Your App:
 
-  URL: http://localhost:8000
+  URL: http://127.0.0.1:8000
 
   Important: Do a hard refresh in your browser:
   - Mac: Cmd + Shift + R
