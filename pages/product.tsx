@@ -171,135 +171,149 @@ function ResumeGenerationForm() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-3xl">
+        <div className="container mx-auto px-4 py-12 max-w-7xl">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-8">
                 Resume Application
             </h1>
 
-            <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-                <div className="space-y-2">
-                    <label htmlFor="applicant" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Applicant Name
-                    </label>
-                    <input
-                        id="applicant"
-                        type="text"
-                        required
-                        value={applicantName}
-                        onChange={(e) => setApplicantName(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter your full name"
-                    />
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Panel - Form */}
+                <div className="lg:sticky lg:top-8 h-fit">
+                    <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+                        <div className="space-y-2">
+                            <label htmlFor="applicant" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Applicant Name
+                            </label>
+                            <input
+                                id="applicant"
+                                type="text"
+                                required
+                                value={applicantName}
+                                onChange={(e) => setApplicantName(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                placeholder="Enter your full name"
+                            />
+                        </div>
 
-                <div className="space-y-2">
-                    <label htmlFor="model" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        AI Model
-                    </label>
-                    <select
-                        id="model"
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    >
-                        <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
-                        <option value="grok-beta">Grok Beta (xAI)</option>
-                        <option value="llama-70b">Llama 3.1 70B Instruct (Hugging Face)</option>
-                    </select>
-                </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Date of Application
-                    </label>
-                    <DatePicker
-                        id="date"
-                        selected={applicationDate}
-                        onChange={(d: Date | null) => setApplicationDate(d)}
-                        dateFormat="yyyy-MM-dd"
-                        placeholderText="Select date"
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Role Applied For
-                    </label>
-                    <input
-                        id="role"
-                        type="text"
-                        required
-                        value={roleAppliedFor}
-                        onChange={(e) => setRoleAppliedFor(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                        placeholder="e.g., Senior Software Engineer"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Your Phone Number
-                    </label>
-                    <input
-                        id="phone"
-                        type="tel"
-                        required
-                        value={YourPhoneNumber}
-                        onChange={(e) => setYourPhoneNumber(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                        placeholder="e.g., +1 (555) 123-4567"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Additional Notes from Applicant
-                    </label>
-                    <textarea
-                        id="notes"
-                        rows={8}
-                        value={additionalNotes}
-                        onChange={(e) => setAdditionalNotes(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                        placeholder="Any additional information, skills, achievements, or special requirements..."
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-                >
-                    {loading ? 'Generating Resume...' : 'Generate Resume'}
-                </button>
-            </form>
-
-            {output && (
-                <section className="mt-8 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                            Generated Resume
-                        </h2>
-                        {!loading && (
-                            <button
-                                onClick={downloadResume}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                        <div className="space-y-2">
+                            <label htmlFor="model" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                AI Model
+                            </label>
+                            <select
+                                id="model"
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Download
-                            </button>
-                        )}
-                    </div>
-                    <div className="markdown-content prose prose-blue dark:prose-invert max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-                            {output}
-                        </ReactMarkdown>
-                    </div>
-                </section>
-            )}
+                                <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
+                                <option value="grok-beta">Grok Beta (xAI)</option>
+                                <option value="llama-70b">Llama 3.1 70B Instruct (Hugging Face)</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Date of Application
+                            </label>
+                            <DatePicker
+                                id="date"
+                                selected={applicationDate}
+                                onChange={(d: Date | null) => setApplicationDate(d)}
+                                dateFormat="yyyy-MM-dd"
+                                placeholderText="Select date"
+                                required
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Role Applied For
+                            </label>
+                            <input
+                                id="role"
+                                type="text"
+                                required
+                                value={roleAppliedFor}
+                                onChange={(e) => setRoleAppliedFor(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                placeholder="e.g., Senior Software Engineer"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Your Phone Number
+                            </label>
+                            <input
+                                id="phone"
+                                type="tel"
+                                required
+                                value={YourPhoneNumber}
+                                onChange={(e) => setYourPhoneNumber(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                placeholder="e.g., +1 (555) 123-4567"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Additional Notes from Applicant
+                            </label>
+                            <textarea
+                                id="notes"
+                                rows={8}
+                                value={additionalNotes}
+                                onChange={(e) => setAdditionalNotes(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                placeholder="Any additional information, skills, achievements, or special requirements..."
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                        >
+                            {loading ? 'Generating Resume...' : 'Generate Resume'}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Right Panel - Output */}
+                <div className="lg:min-h-screen">
+                    {output ? (
+                        <section className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                    Generated Resume
+                                </h2>
+                                {!loading && (
+                                    <button
+                                        onClick={downloadResume}
+                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        Download
+                                    </button>
+                                )}
+                            </div>
+                            <div className="markdown-content prose prose-blue dark:prose-invert max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                                    {output}
+                                </ReactMarkdown>
+                            </div>
+                        </section>
+                    ) : (
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex items-center justify-center">
+                            <p className="text-gray-500 dark:text-gray-400 text-center">
+                                Fill out the form and click "Generate Resume" to see your results here
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
