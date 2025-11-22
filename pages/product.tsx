@@ -308,7 +308,7 @@ function ResumeGenerationForm() {
                     ) : (
                         <div className="bg-[#fefdfb] dark:bg-[#342828] rounded-xl shadow-lg p-8 h-full flex items-center justify-center border border-[#e8d5c4] dark:border-[#4a3933]">
                             <p className="text-[#8b7665] dark:text-[#b8a394] text-center">
-                                Fill out the form and click "Generate Resume" to see your results here
+                                Fill out the form and click &quot;Generate Resume&quot; to see your results here
                             </p>
                         </div>
                     )}

@@ -417,4 +417,51 @@ docker run -p 8000:8000 -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" -e CLERK_JWKS_UR
   When using Docker Compose, avoid mounting the out/ directory as a volume. Let Docker build it fresh each time. The
    volume mount is only useful for hot-reloading backend code (server.py), not static frontend files.
 
-  Try it now - the latest version should be live! 🎉
+
+### What happens when you run ``docker compose up``
+
+ Step 1: Reading Configuration
+
+  - Docker Compose reads your docker-compose.yaml file
+  - Loads environment variables from .env file
+
+  Step 2: Building the Image (if not already built)
+
+  - Looks for Dockerfile in the current directory
+  - Builds a Docker image with your Next.js app + FastAPI backend
+  - Passes NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY during build
+  - This creates a packaged version of your app
+
+  Step 3: Creating Container
+
+  - Creates a container named app from the built image
+  - Sets up environment variables (API keys, Clerk secrets, etc.)
+  - Mounts ./api/server.py so changes to this file are reflected live
+
+  Step 4: Port Mapping
+
+  - Maps port 8000 on your computer → port 8000 inside container
+  - Now you can access the app at http://localhost:8000
+
+  Step 5: Starting the Service
+
+  - Runs the command: uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+  - Starts your FastAPI backend server on port 8000
+  - The --reload flag enables hot reloading for development
+
+  Result:
+
+  - Your FastAPI backend is running at http://localhost:8000
+  - Changes to server.py will auto-reload
+  - The container keeps running until you press Ctrl+C or run docker compose down
+
+  Note:
+
+  This only runs your backend API server, not the Next.js frontend. The Next.js dev server (running on port 3000) is separate and
+  needs to run with npm run dev.
+
+
+  ### Important COmmand : docker compose build --no-cache
+
+
+
