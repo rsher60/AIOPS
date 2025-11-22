@@ -172,16 +172,16 @@ function ResumeGenerationForm() {
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-8">
+            <h1 className="text-4xl font-bold text-[#3d2e2e] dark:text-[#f5e6d3] mb-8">
                 Resume Application
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Panel - Form */}
                 <div className="lg:sticky lg:top-8 h-fit">
-                    <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+                    <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-[#342828] rounded-xl shadow-lg p-8 border border-[#e8d5c4] dark:border-[#4a3933]">
                         <div className="space-y-2">
-                            <label htmlFor="applicant" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="applicant" className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
                                 Applicant Name
                             </label>
                             <input
@@ -190,20 +190,20 @@ function ResumeGenerationForm() {
                                 required
                                 value={applicantName}
                                 onChange={(e) => setApplicantName(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                                 placeholder="Enter your full name"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="model" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="model" className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
                                 AI Model
                             </label>
                             <select
                                 id="model"
                                 value={selectedModel}
                                 onChange={(e) => setSelectedModel(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                             >
                                 <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
                                 <option value="grok-beta">Grok Beta (xAI)</option>
@@ -212,7 +212,7 @@ function ResumeGenerationForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="date" className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
                                 Date of Application
                             </label>
                             <DatePicker
@@ -222,12 +222,12 @@ function ResumeGenerationForm() {
                                 dateFormat="yyyy-MM-dd"
                                 placeholderText="Select date"
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="role" className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
                                 Role Applied For
                             </label>
                             <input
@@ -236,12 +236,12 @@ function ResumeGenerationForm() {
                                 required
                                 value={roleAppliedFor}
                                 onChange={(e) => setRoleAppliedFor(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                                 placeholder="e.g., Senior Software Engineer"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="phone" className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
                                 Your Phone Number
                             </label>
                             <input
@@ -250,13 +250,13 @@ function ResumeGenerationForm() {
                                 required
                                 value={YourPhoneNumber}
                                 onChange={(e) => setYourPhoneNumber(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                                 placeholder="e.g., +1 (555) 123-4567"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="notes" className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
                                 Additional Notes from Applicant
                             </label>
                             <textarea
@@ -264,7 +264,7 @@ function ResumeGenerationForm() {
                                 rows={8}
                                 value={additionalNotes}
                                 onChange={(e) => setAdditionalNotes(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                                 placeholder="Any additional information, skills, achievements, or special requirements..."
                             />
                         </div>
@@ -272,7 +272,7 @@ function ResumeGenerationForm() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                            className="w-full bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] disabled:from-[#e8b59a] disabled:to-[#f0cdb0] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                         >
                             {loading ? 'Generating Resume...' : 'Generate Resume'}
                         </button>
@@ -282,15 +282,15 @@ function ResumeGenerationForm() {
                 {/* Right Panel - Output */}
                 <div className="lg:min-h-screen">
                     {output ? (
-                        <section className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full">
+                        <section className="bg-[#fefdfb] dark:bg-[#342828] rounded-xl shadow-lg p-8 h-full border border-[#e8d5c4] dark:border-[#4a3933]">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                <h2 className="text-2xl font-semibold text-[#3d2e2e] dark:text-[#f5e6d3]">
                                     Generated Resume
                                 </h2>
                                 {!loading && (
                                     <button
                                         onClick={downloadResume}
-                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                                        className="flex items-center gap-2 bg-[#8fbc8f] hover:bg-[#7aa67a] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -299,15 +299,15 @@ function ResumeGenerationForm() {
                                     </button>
                                 )}
                             </div>
-                            <div className="markdown-content prose prose-blue dark:prose-invert max-w-none">
+                            <div className="markdown-content prose prose-stone dark:prose-invert max-w-none">
                                 <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                                     {output}
                                 </ReactMarkdown>
                             </div>
                         </section>
                     ) : (
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 h-full flex items-center justify-center">
-                            <p className="text-gray-500 dark:text-gray-400 text-center">
+                        <div className="bg-[#fefdfb] dark:bg-[#342828] rounded-xl shadow-lg p-8 h-full flex items-center justify-center border border-[#e8d5c4] dark:border-[#4a3933]">
+                            <p className="text-[#8b7665] dark:text-[#b8a394] text-center">
                                 Fill out the form and click "Generate Resume" to see your results here
                             </p>
                         </div>
@@ -320,7 +320,7 @@ function ResumeGenerationForm() {
 
 export default function Product() {
     return (
-        <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <main className="min-h-screen bg-gradient-to-br from-[#faf8f5] to-[#f5ede5] dark:from-[#2a1f1f] dark:to-[#1f1616]">
             {/* User Menu in Top Right */}
             <div className="absolute top-4 right-4">
                 <UserButton showName={true} />
