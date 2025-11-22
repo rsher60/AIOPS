@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Warm Light Mode Colors */
+  --background: #faf8f5;
+  --foreground: #3d2e2e;
+  --primary: #d97757;
+  --primary-hover: #c5643f;
+  --secondary: #e8b59a;
+  --accent: #f4a261;
+  --border: #e8d5c4;
+  --card-bg: #ffffff;
+  --muted: #8b7665;
+  --success: #8fbc8f;
+  --success-hover: #7aa67a;
 }
 
 @theme inline {
@@ -14,8 +24,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Warm Dark Mode Colors */
+    --background: #2a1f1f;
+    --foreground: #f5e6d3;
+    --primary: #e8956f;
+    --primary-hover: #d97757;
+    --secondary: #c4886f;
+    --accent: #f4a261;
+    --border: #4a3933;
+    --card-bg: #342828;
+    --muted: #b8a394;
+    --success: #9ec99e;
+    --success-hover: #8fbc8f;
   }
 }
 
@@ -23,6 +43,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 
@@ -81,7 +102,54 @@ body {
   }
   .markdown-content hr {
     border: 0;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border);
     margin: 2em 0;
+  }
+
+  /* Warm Color Utilities */
+  .bg-warm {
+    background-color: var(--background);
+  }
+
+  .text-warm {
+    color: var(--foreground);
+  }
+
+  .bg-card {
+    background-color: var(--card-bg);
+  }
+
+  .text-muted {
+    color: var(--muted);
+  }
+
+  .border-warm {
+    border-color: var(--border);
+  }
+
+  .btn-primary {
+    background-color: var(--primary);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+  }
+
+  .btn-success {
+    background-color: var(--success);
+    color: white;
+  }
+
+  .btn-success:hover {
+    background-color: var(--success-hover);
+  }
+
+  .accent-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  }
+
+  .warm-shadow {
+    box-shadow: 0 4px 6px -1px rgba(217, 119, 87, 0.1), 0 2px 4px -1px rgba(217, 119, 87, 0.06);
   }
 }
