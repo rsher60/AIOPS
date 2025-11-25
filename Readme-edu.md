@@ -376,7 +376,7 @@ sudo netstat -tulpn | grep :8000
 kill -9 PID
 
 
-
+## We need to load the environment variables while 
    
 
 docker build --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" -t consultation-app . 
@@ -465,3 +465,28 @@ docker run -p 8000:8000 -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" -e CLERK_JWKS_UR
 
 
 
+### Commands to build the ECR image 
+
+# 1. Authenticate Docker to ECR (using your .env values!)
+aws ecr get-login-password --region $DEFAULT_AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com
+
+
+# 1. Remove the old local image
+docker rmi resumegenerator-app:latest
+docker rmi $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
+
+# 2. Clear Docker build cache (optional but thorough)
+docker builder prune -f
+
+# 2. Build for Linux/AMD64 (CRITICAL for Apple Silicon Macs!)
+docker build \
+  --no-cache \
+  --platform linux/amd64 \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" \
+  -t resumegenerator-app .
+
+# 3. Tag your image (using your .env values!)
+docker tag resumegenerator-app:latest $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
+
+# 4. Push to ECR
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
