@@ -6,4 +6,5 @@ fastapi-clerk-auth
 pydantic
 huggingface_hub
 python-dotenv
+PyPDF2
 

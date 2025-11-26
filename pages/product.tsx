@@ -17,6 +17,8 @@ function ResumeGenerationForm() {
     const [applicationDate, setApplicationDate] = useState<Date | null>(new Date());
     const [roleAppliedFor, setRoleAppliedFor] = useState('');
     const [YourPhoneNumber, setYourPhoneNumber] = useState('');
+    const [resumeFile, setResumeFile] = useState<File | null>(null);
+    const [dragActive, setDragActive] = useState(false);
     const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Streaming state
@@ -26,12 +28,62 @@ function ResumeGenerationForm() {
     // Connection management
     const controllerRef = useRef<AbortController | null>(null);
     const isConnectingRef = useRef(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Handle file drag events
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    // Handle file drop
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            if (file.type === 'application/pdf') {
+                setResumeFile(file);
+            } else {
+                alert('Please upload a PDF file');
+            }
+        }
+    };
+
+    // Handle file input change
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.type === 'application/pdf') {
+                setResumeFile(file);
+            } else {
+                alert('Please upload a PDF file');
+            }
+        }
+    };
+
+    // Remove uploaded file
+    const removeFile = () => {
+        setResumeFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     const connectWithFreshToken = async (formData: {
         applicant_name: string;
         application_date: string;
         role_applied_for: string;
         phone_number: string;
+        resume_pdf?: string;
+        resume_filename?: string;
         additional_notes: string;
         model: string;
     }) => {
@@ -129,13 +181,40 @@ function ResumeGenerationForm() {
         }
     };
 
+    // Convert file to base64
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                if (typeof reader.result === 'string') {
+                    // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                } else {
+                    reject(new Error('Failed to read file'));
+                }
+            };
+            reader.onerror = error => reject(error);
+        });
+    };
+
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setOutput('');
         setLoading(true);
 
         // Prepare form data
-        const formData = {
+        const formData: {
+            applicant_name: string;
+            application_date: string;
+            role_applied_for: string;
+            phone_number: string;
+            resume_pdf?: string;
+            resume_filename?: string;
+            additional_notes: string;
+            model: string;
+        } = {
             applicant_name: applicantName,
             application_date: applicationDate?.toISOString().slice(0, 10) || '',
             role_applied_for: roleAppliedFor,
@@ -143,6 +222,20 @@ function ResumeGenerationForm() {
             additional_notes: additionalNotes,
             model: selectedModel,
         };
+
+        // Add resume PDF if uploaded
+        if (resumeFile) {
+            try {
+                const base64 = await fileToBase64(resumeFile);
+                formData.resume_pdf = base64;
+                formData.resume_filename = resumeFile.name;
+            } catch (error) {
+                console.error('Error reading PDF file:', error);
+                setOutput('Error reading PDF file. Please try again.');
+                setLoading(false);
+                return;
+            }
+        }
 
         // Start connection with fresh token
         await connectWithFreshToken(formData);
@@ -253,6 +346,69 @@ function ResumeGenerationForm() {
                                 className="w-full px-4 py-2 border border-[#e8d5c4] dark:border-[#4a3933] rounded-lg focus:ring-2 focus:ring-[#d97757] focus:border-transparent dark:bg-[#2a1f1f] dark:text-[#f5e6d3] bg-[#fefdfb]"
                                 placeholder="e.g., +1 (555) 123-4567"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
+                                Upload Resume (PDF)
+                            </label>
+                            <div
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                                className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
+                                    dragActive
+                                        ? 'border-[#d97757] bg-[#fef3ee] dark:bg-[#3d2e2e]'
+                                        : 'border-[#e8d5c4] dark:border-[#4a3933] bg-[#fefdfb] dark:bg-[#2a1f1f]'
+                                }`}
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={handleFileChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                {resumeFile ? (
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-3">
+                                            <svg className="w-8 h-8 text-[#d97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-sm font-medium text-[#3d2e2e] dark:text-[#f5e6d3]">
+                                                    {resumeFile.name}
+                                                </p>
+                                                <p className="text-xs text-[#8b7665] dark:text-[#b8a394]">
+                                                    {(resumeFile.size / 1024).toFixed(2)} KB
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={removeFile}
+                                            className="text-[#d97757] hover:text-[#c5643f] transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center">
+                                        <svg className="mx-auto h-12 w-12 text-[#8b7665] dark:text-[#b8a394]" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                        <p className="mt-2 text-sm text-[#3d2e2e] dark:text-[#f5e6d3]">
+                                            <span className="font-semibold">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p className="mt-1 text-xs text-[#8b7665] dark:text-[#b8a394]">
+                                            PDF files only
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-2">

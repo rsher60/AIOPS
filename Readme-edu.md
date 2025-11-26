@@ -379,11 +379,15 @@ kill -9 PID
 ## We need to load the environment variables while 
    
 
-docker build --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" -t consultation-app . 
+docker build --no-cache --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" -t resumegen-app . 
 
+sh ./build-docker.sh
 
-
-docker run -p 8000:8000 -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" -e CLERK_JWKS_URL="$CLERK_JWKS_URL" -e OPENAI_API_KEY="$OPENAI_API_KEY" consultation-app
+docker run -p 8000:8000 \
+  -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" \
+  -e CLERK_JWKS_URL="$CLERK_JWKS_URL" \
+  -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+  resumegen-app
 
 
 
@@ -485,6 +489,7 @@ docker build \
   --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" \
   -t resumegenerator-app .
 
+-- You willneed to set the Key 
 # 3. Tag your image (using your .env values!)
 docker tag resumegenerator-app:latest $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
 

@@ -6,10 +6,12 @@ services:
       context: .
       args:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    image: resumegen-app
+    container_name: resumegen-app
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - .env.local
     environment:
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - CLERK_JWKS_URL=${CLERK_JWKS_URL}
@@ -20,3 +22,9 @@ services:
       # Mount the FastAPI backend code for hot reload
       - ./api/server.py:/app/server.py
     command: uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3

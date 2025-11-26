@@ -1,4 +1,6 @@
 import os
+import base64
+import io
 from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse
@@ -8,6 +10,7 @@ from pydantic import BaseModel
 from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer, HTTPAuthorizationCredentials
 from openai import OpenAI
 from dotenv import load_dotenv
+from PyPDF2 import PdfReader
 load_dotenv()
 app = FastAPI()
 
@@ -29,6 +32,8 @@ class ResumeRequest(BaseModel):
     application_date: str
     role_applied_for: str
     phone_number: str
+    resume_pdf: str | None = None
+    resume_filename: str | None = None
     additional_notes: str
     model: str
 
@@ -44,14 +49,74 @@ Generate a comprehensive resume with the following sections:
 ### Suggestions for Improvement
 """
 
+def parse_pdf_content(base64_pdf: str) -> str:
+    """
+    Parse PDF content from base64 string and extract text.
+
+    Args:
+        base64_pdf: Base64 encoded PDF file
+
+    Returns:
+        Extracted text from the PDF
+    """
+    try:
+        # Decode base64 to bytes
+        pdf_bytes = base64.b64decode(base64_pdf)
+        print(f"Decoded PDF bytes: {len(pdf_bytes)} bytes")
+
+        # Create a BytesIO object from the bytes
+        pdf_file = io.BytesIO(pdf_bytes)
+
+        # Read PDF using PyPDF2
+        pdf_reader = PdfReader(pdf_file)
+        print(f"PDF has {len(pdf_reader.pages)} pages")
+
+        # Extract text from all pages
+        text_content = []
+        for i, page in enumerate(pdf_reader.pages):
+            text = page.extract_text()
+            print(f"Extracted {len(text)} chars from page {i+1}")
+            text_content.append(text)
+
+        # Join all pages with double newline
+        full_text = "\n\n".join(text_content)
+        print(f"Total extracted text: {len(full_text)} characters")
+        return full_text
+    except Exception as e:
+        print(f"ERROR parsing PDF: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Error parsing PDF: {str(e)}")
+
 def user_prompt_for(request: ResumeRequest) -> str:
-    return f"""Create a professional resume for:
-Applicant Name: {request.applicant_name}
-Phone Number: {request.phone_number}
-Application Date: {request.application_date}
-Role Applied For: {request.role_applied_for}
-Additional Notes from Applicant:
-{request.additional_notes if request.additional_notes else "None provided"}"""
+    prompt_parts = [
+        "Create a professional resume for:",
+        f"Applicant Name: {request.applicant_name}",
+        f"Phone Number: {request.phone_number}",
+        f"Application Date: {request.application_date}",
+        f"Role Applied For: {request.role_applied_for}",
+    ]
+
+    # Add existing resume content if PDF was uploaded
+    if request.resume_pdf:
+        pdf_content = parse_pdf_content(request.resume_pdf)
+        prompt_parts.extend([
+            "",
+            "=== EXISTING RESUME CONTENT ===",
+            pdf_content,
+            "=== END OF EXISTING RESUME ===",
+            "",
+            "Please use the above existing resume as a reference and improve it for the role applied for."
+        ])
+
+    # Add additional notes
+    prompt_parts.extend([
+        "",
+        "Additional Notes from Applicant:",
+        request.additional_notes if request.additional_notes else "None provided"
+    ])
+
+    return "\n".join(prompt_parts)
 
 @app.post("/api/consultation")
 def consultation_summary(
