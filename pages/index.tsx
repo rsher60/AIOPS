@@ -1,21 +1,160 @@
 "use client"
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 
 export default function Home() {
+  const [typedText, setTypedText] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  const fullText = "Transform Your Career with AI";
+
+  useEffect(() => {
+    setIsVisible(true);
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex <= fullText.length) {
+        setTypedText(fullText.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+      }
+    }, 100);
+
+    return () => clearInterval(typingInterval);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % 3);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const stats = [
+    { number: 10000, label: "Resumes Generated", suffix: "+" },
+    { number: 98, label: "Success Rate", suffix: "%" },
+    { number: 50, label: "Countries", suffix: "+" },
+  ];
+
+  const features = [
+    {
+      icon: "📋",
+      title: "Professional Resumes",
+      description: "Generate comprehensive technical resumes tailored to your job applications with AI-powered insights",
+      color: "from-[#d97757] to-[#f4a261]"
+    },
+    {
+      icon: "✨",
+      title: "Smart Tailoring",
+      description: "Automatically adapt your resume to match job descriptions and industry standards",
+      color: "from-[#8fbc8f] to-[#9ec99e]"
+    },
+    {
+      icon: "📧",
+      title: "Email Integration",
+      description: "Draft professional cover letters and follow-up emails automatically",
+      color: "from-[#e8b59a] to-[#d97757]"
+    },
+  ];
+
+  const [animatedStats, setAnimatedStats] = useState(stats.map(() => 0));
+
+  useEffect(() => {
+    stats.forEach((stat, index) => {
+      let current = 0;
+      const increment = stat.number / 50;
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= stat.number) {
+          current = stat.number;
+          clearInterval(timer);
+        }
+        setAnimatedStats(prev => {
+          const newStats = [...prev];
+          newStats[index] = Math.floor(current);
+          return newStats;
+        });
+      }, 30);
+    });
+  }, []);
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#faf8f5] to-[#f5ede5] dark:from-[#2a1f1f] dark:to-[#1f1616]">
-      <div className="container mx-auto px-4 py-12">
+    <main className="min-h-screen bg-gradient-to-br from-[#faf8f5] to-[#f5ede5] dark:from-[#2a1f1f] dark:to-[#1f1616] overflow-hidden relative">
+      {/* Animated background shapes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute w-96 h-96 bg-gradient-to-r from-[#d97757]/20 to-[#f4a261]/20 rounded-full blur-3xl animate-blob"
+          style={{
+            top: '10%',
+            left: '10%',
+            animation: 'blob 7s infinite'
+          }}
+        />
+        <div
+          className="absolute w-96 h-96 bg-gradient-to-r from-[#8fbc8f]/20 to-[#9ec99e]/20 rounded-full blur-3xl animate-blob animation-delay-2000"
+          style={{
+            top: '50%',
+            right: '10%',
+            animation: 'blob 7s infinite 2s'
+          }}
+        />
+        <div
+          className="absolute w-96 h-96 bg-gradient-to-r from-[#e8b59a]/20 to-[#d97757]/20 rounded-full blur-3xl animate-blob animation-delay-4000"
+          style={{
+            bottom: '10%',
+            left: '50%',
+            animation: 'blob 7s infinite 4s'
+          }}
+        />
+
+        {/* Floating particles */}
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-[#d97757]/30 rounded-full"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animation: `float ${5 + Math.random() * 10}s infinite ease-in-out`,
+              animationDelay: `${Math.random() * 5}s`
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Interactive cursor glow */}
+      <div
+        className="absolute w-96 h-96 bg-gradient-to-r from-[#d97757]/10 to-[#f4a261]/10 rounded-full blur-3xl pointer-events-none transition-all duration-300"
+        style={{
+          left: mousePosition.x - 192,
+          top: mousePosition.y - 192,
+        }}
+      />
+
+      <div className="container mx-auto px-4 py-12 relative z-10">
         {/* Navigation */}
-        <nav className="flex justify-between items-center mb-12">
-          <h1 className="text-2xl font-bold text-[#3d2e2e] dark:text-[#f5e6d3]">
+        <nav className={`flex justify-between items-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+          <h1 className="text-2xl font-bold text-[#3d2e2e] dark:text-[#f5e6d3] hover:scale-105 transition-transform cursor-pointer">
             ResumeGenerator Pro
           </h1>
           <div>
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="bg-[#d97757] hover:bg-[#c5643f] text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg">
+                <button className="bg-[#d97757] hover:bg-[#c5643f] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform">
                   Sign In
                 </button>
               </SignInButton>
@@ -24,7 +163,7 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <Link
                   href="/product"
-                  className="bg-[#d97757] hover:bg-[#c5643f] text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg"
+                  className="bg-[#d97757] hover:bg-[#c5643f] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
                 >
                   Go to App
                 </Link>
@@ -35,71 +174,202 @@ export default function Home() {
         </nav>
 
         {/* Hero Section */}
-        <div className="text-center py-16">
-          <h4 className="text-4xl font-bold bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent mb-6">
-            Transform Your Career
-            <br />
-            Generate Resume for your next Job at Lightning Speed!!
-          </h4>
-          <p className="text-xl text-[#8b7665] dark:text-[#b8a394] mb-12 max-w-2xl mx-auto">
-            AI-powered assistant that generates resumes, cover letters, and follow-up emails
+        <div className={`text-center py-16 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <h2 className="text-5xl md:text-6xl font-bold mb-4 min-h-[4rem]">
+            <span className="bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent animate-gradient">
+              {typedText}
+              <span className="animate-pulse">|</span>
+            </span>
+          </h2>
+          <p className="text-2xl font-semibold text-[#3d2e2e] dark:text-[#f5e6d3] mb-6 animate-fade-in-up">
+            Generate Resumes for your next Job at Lightning Speed
+          </p>
+          <p className="text-xl text-[#8b7665] dark:text-[#b8a394] mb-12 max-w-2xl mx-auto animate-fade-in-up animation-delay-300">
+            AI-powered assistant that generates professional resumes, cover letters, and follow-up emails in seconds
           </p>
 
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#d97757] to-[#f4a261] rounded-xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-              <div className="relative bg-white dark:bg-[#342828] p-6 rounded-xl shadow-lg border border-[#e8d5c4] dark:border-[#4a3933] backdrop-blur-sm">
-                <div className="text-3xl mb-4">📋</div>
-                <h3 className="text-lg font-semibold mb-2 text-[#3d2e2e] dark:text-[#f5e6d3]">Professional Summaries</h3>
-                <p className="text-[#8b7665] dark:text-[#b8a394] text-sm">
-                  Generate comprehensive technical resumes tailored to your job applications
-                </p>
+          {/* Animated Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
+            {stats.map((stat, index) => (
+              <div
+                key={index}
+                className="bg-white/50 dark:bg-[#342828]/50 backdrop-blur-md p-8 rounded-2xl border border-[#e8d5c4] dark:border-[#4a3933] shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform"
+                style={{
+                  animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
+                }}
+              >
+                <div className="text-4xl font-bold bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent mb-2">
+                  {animatedStats[index]}{stat.suffix}
+                </div>
+                <div className="text-sm text-[#8b7665] dark:text-[#b8a394] font-medium">
+                  {stat.label}
+                </div>
               </div>
-            </div>
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#8fbc8f] to-[#9ec99e] rounded-xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-              <div className="relative bg-white dark:bg-[#342828] p-6 rounded-xl shadow-lg border border-[#e8d5c4] dark:border-[#4a3933] backdrop-blur-sm">
-                <div className="text-3xl mb-4">✅</div>
-                <h3 className="text-lg font-semibold mb-2 text-[#3d2e2e] dark:text-[#f5e6d3]">Action Items</h3>
-                <p className="text-[#8b7665] dark:text-[#b8a394] text-sm">
-                  Clear next steps and follow-up actions for every interview
-                </p>
-              </div>
-            </div>
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#e8b59a] to-[#d97757] rounded-xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-              <div className="relative bg-white dark:bg-[#342828] p-6 rounded-xl shadow-lg border border-[#e8d5c4] dark:border-[#4a3933] backdrop-blur-sm">
-                <div className="text-3xl mb-4">📧</div>
-                <h3 className="text-lg font-semibold mb-2 text-[#3d2e2e] dark:text-[#f5e6d3]">Get in your Email</h3>
-                <p className="text-[#8b7665] dark:text-[#b8a394] text-sm">
-                  Draft clear, patient-friendly email communications automatically
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button className="bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] text-white font-bold py-4 px-8 rounded-xl text-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-xl">
-                Start Free Trial
-              </button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <Link href="/product">
-              <button className="bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] text-white font-bold py-4 px-8 rounded-xl text-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-xl">
-                Open Consultation Assistant
-              </button>
-            </Link>
-          </SignedIn>
+          {/* Features Grid with staggered animation */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className={`relative group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                style={{
+                  transitionDelay: `${400 + index * 150}ms`
+                }}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-all duration-500 scale-95 group-hover:scale-100`}></div>
+                <div className={`relative bg-white dark:bg-[#342828] p-8 rounded-2xl shadow-lg border-2 transition-all duration-300 hover:scale-105 transform ${
+                  activeFeature === index
+                    ? 'border-[#d97757] dark:border-[#f4a261] shadow-2xl scale-105'
+                    : 'border-[#e8d5c4] dark:border-[#4a3933]'
+                }`}>
+                  <div className="text-5xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-bold mb-3 text-[#3d2e2e] dark:text-[#f5e6d3]">
+                    {feature.title}
+                  </h3>
+                  <p className="text-[#8b7665] dark:text-[#b8a394]">
+                    {feature.description}
+                  </p>
+                  <div className="mt-4 h-1 bg-gradient-to-r from-transparent via-[#d97757] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="group relative bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
+                  <span className="relative z-10">Start Free Trial</span>
+                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link href="/product">
+                <button className="group relative bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
+                  <span className="relative z-10">Open Resume Generator</span>
+                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+                </button>
+              </Link>
+            </SignedIn>
+
+            <button className="group border-2 border-[#d97757] dark:border-[#f4a261] text-[#d97757] dark:text-[#f4a261] font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 hover:bg-[#d97757] hover:text-white shadow-lg hover:shadow-xl">
+              Watch Demo
+            </button>
+          </div>
+        </div>
+
+        {/* How It Works Section */}
+        <div className="max-w-6xl mx-auto mb-16">
+          <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent">
+            How It Works
+          </h2>
+          <div className="grid md:grid-cols-4 gap-6">
+            {[
+              { step: "1", title: "Sign Up", icon: "👤", desc: "Create your free account" },
+              { step: "2", title: "Upload Resume", icon: "📄", desc: "Upload your existing resume or start fresh" },
+              { step: "3", title: "AI Magic", icon: "✨", desc: "Let AI enhance and tailor your resume" },
+              { step: "4", title: "Download", icon: "⬇️", desc: "Get your professional resume" },
+            ].map((item, index) => (
+              <div
+                key={index}
+                className="relative group"
+                style={{
+                  animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`
+                }}
+              >
+                <div className="bg-white/70 dark:bg-[#342828]/70 backdrop-blur-sm p-6 rounded-xl border border-[#e8d5c4] dark:border-[#4a3933] hover:border-[#d97757] transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
+                  <div className="text-6xl mb-4 text-center transform group-hover:scale-110 transition-transform">
+                    {item.icon}
+                  </div>
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-[#d97757] to-[#f4a261] rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    {item.step}
+                  </div>
+                  <h3 className="text-xl font-bold text-center mb-2 text-[#3d2e2e] dark:text-[#f5e6d3]">
+                    {item.title}
+                  </h3>
+                  <p className="text-center text-[#8b7665] dark:text-[#b8a394] text-sm">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Trust Indicators */}
-        <div className="text-center text-sm text-[#8b7665] dark:text-[#b8a394]">
-          <p>HIPAA Compliant • Secure • Professional</p>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-4 bg-white/50 dark:bg-[#342828]/50 backdrop-blur-md px-8 py-4 rounded-full border border-[#e8d5c4] dark:border-[#4a3933] shadow-lg">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium text-[#8b7665] dark:text-[#b8a394]">Secure</span>
+            </div>
+            <div className="w-px h-6 bg-[#e8d5c4] dark:bg-[#4a3933]"></div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium text-[#8b7665] dark:text-[#b8a394]">GDPR Compliant</span>
+            </div>
+            <div className="w-px h-6 bg-[#e8d5c4] dark:bg-[#4a3933]"></div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium text-[#8b7665] dark:text-[#b8a394]">Professional</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+
+        @keyframes gradient {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+      `}</style>
     </main>
   );
 }
