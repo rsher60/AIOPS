@@ -167,18 +167,34 @@ def consultation_summary(
             if not api_key or api_key.startswith("your_"):
                 raise HTTPException(status_code=400, detail="Hugging Face API key not configured. Please add your HUGGINGFACE_API_KEY to the .env file")
 
-            from huggingface_hub import InferenceClient
-            hf_client = InferenceClient(token=api_key)
+            try:
+                # Hugging Face uses OpenAI-compatible API
+                hf_client = OpenAI(
+                    base_url="https://router.huggingface.co/v1",
+                    api_key=api_key,
+                )
 
-            # Combine system and user prompts for HF
-            combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+                print(f"HF Request - Model: meta-llama/Llama-3.1-70B-Instruct")
+                print(f"HF Request - Messages: {prompt}")
+                print(f"HF Request - Max tokens: 2048")
 
-            stream = hf_client.text_generation(
-                prompt=combined_prompt,
-                model="meta-llama/Meta-Llama-3.1-70B-Instruct",
-                stream=True,
-                max_new_tokens=2048,
-            )
+                stream = hf_client.chat.completions.create(
+                    model="meta-llama/Llama-3.1-70B-Instruct",
+                    messages=prompt,
+                    stream=True,
+                    max_tokens=2048,
+                )
+            except Exception as e:
+                print(f"HUGGING FACE ERROR: {type(e).__name__}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # Try to get more details from the error
+                if hasattr(e, 'response'):
+                    print(f"Response status: {e.response.status_code}")
+                    print(f"Response body: {e.response.text}")
+                raise HTTPException(status_code=500, detail=f"Hugging Face API error: {str(e)}")
+
+            
         else:
             # Default to GPT if unknown model
             api_key = os.getenv("OPENAI_API_KEY")
@@ -205,25 +221,16 @@ def consultation_summary(
             raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
 
     def event_stream():
-        if request.model == "llama-70b":
-            # Hugging Face returns plain text chunks
-            for chunk in stream:
-                if chunk:
-                    lines = chunk.split("\n")
-                    for line in lines[:-1]:
-                        yield f"data: {line}\n\n"
-                        yield "data:  \n"
-                    yield f"data: {lines[-1]}\n\n"
-        else:
-            # OpenAI and xAI (Grok) use the same response format
-            for chunk in stream:
-                text = chunk.choices[0].delta.content
-                if text:
-                    lines = text.split("\n")
-                    for line in lines[:-1]:
-                        yield f"data: {line}\n\n"
-                        yield "data:  \n"
-                    yield f"data: {lines[-1]}\n\n"
+        # All models (OpenAI, xAI Grok, and Hugging Face) use the same response format
+        # since they all use the OpenAI-compatible API
+        for chunk in stream:
+            text = chunk.choices[0].delta.content
+            if text:
+                lines = text.split("\n")
+                for line in lines[:-1]:
+                    yield f"data: {line}\n\n"
+                    yield "data:  \n"
+                yield f"data: {lines[-1]}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
