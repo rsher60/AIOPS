@@ -55,19 +55,19 @@ export default function Home() {
       icon: "📋",
       title: "Professional Resumes",
       description: "Generate comprehensive technical resumes tailored to your job applications with AI-powered insights",
-      color: "from-[#d97757] to-[#f4a261]"
+      color: "from-[#2E86AB] to-[#4A9EBF]"
     },
     {
       icon: "✨",
       title: "Smart Tailoring",
       description: "Automatically adapt your resume to match job descriptions and industry standards",
-      color: "from-[#8fbc8f] to-[#9ec99e]"
+      color: "from-[#52B788] to-[#74C69D]"
     },
     {
       icon: "📧",
       title: "Email Integration",
       description: "Draft professional cover letters and follow-up emails automatically",
-      color: "from-[#e8b59a] to-[#d97757]"
+      color: "from-[#06A77D] to-[#2E86AB]"
     },
   ];
 
@@ -93,11 +93,11 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#faf8f5] to-[#f5ede5] dark:from-[#2a1f1f] dark:to-[#1f1616] overflow-hidden relative">
+    <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821] overflow-hidden relative">
       {/* Animated background shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className="absolute w-96 h-96 bg-gradient-to-r from-[#d97757]/20 to-[#f4a261]/20 rounded-full blur-3xl animate-blob"
+          className="absolute w-96 h-96 bg-gradient-to-r from-[#2E86AB]/20 to-[#4A9EBF]/20 rounded-full blur-3xl animate-blob"
           style={{
             top: '10%',
             left: '10%',
@@ -105,7 +105,7 @@ export default function Home() {
           }}
         />
         <div
-          className="absolute w-96 h-96 bg-gradient-to-r from-[#8fbc8f]/20 to-[#9ec99e]/20 rounded-full blur-3xl animate-blob animation-delay-2000"
+          className="absolute w-96 h-96 bg-gradient-to-r from-[#52B788]/20 to-[#74C69D]/20 rounded-full blur-3xl animate-blob animation-delay-2000"
           style={{
             top: '50%',
             right: '10%',
@@ -113,7 +113,7 @@ export default function Home() {
           }}
         />
         <div
-          className="absolute w-96 h-96 bg-gradient-to-r from-[#e8b59a]/20 to-[#d97757]/20 rounded-full blur-3xl animate-blob animation-delay-4000"
+          className="absolute w-96 h-96 bg-gradient-to-r from-[#06A77D]/20 to-[#2E86AB]/20 rounded-full blur-3xl animate-blob animation-delay-4000"
           style={{
             bottom: '10%',
             left: '50%',
@@ -125,7 +125,7 @@ export default function Home() {
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-[#d97757]/30 rounded-full"
+            className="absolute w-2 h-2 bg-[#2E86AB]/30 rounded-full"
             style={{
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
@@ -138,7 +138,7 @@ export default function Home() {
 
       {/* Interactive cursor glow */}
       <div
-        className="absolute w-96 h-96 bg-gradient-to-r from-[#d97757]/10 to-[#f4a261]/10 rounded-full blur-3xl pointer-events-none transition-all duration-300"
+        className="absolute w-96 h-96 bg-gradient-to-r from-[#2E86AB]/10 to-[#4A9EBF]/10 rounded-full blur-3xl pointer-events-none transition-all duration-300"
         style={{
           left: mousePosition.x - 192,
           top: mousePosition.y - 192,
@@ -148,13 +148,13 @@ export default function Home() {
       <div className="container mx-auto px-4 py-12 relative z-10">
         {/* Navigation */}
         <nav className={`flex justify-between items-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-          <h1 className="text-2xl font-bold text-[#3d2e2e] dark:text-[#f5e6d3] hover:scale-105 transition-transform cursor-pointer">
+          <h1 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] hover:scale-105 transition-transform cursor-pointer">
             ResumeGenerator Pro
           </h1>
           <div>
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="bg-[#d97757] hover:bg-[#c5643f] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform">
+                <button className="bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform">
                   Sign In
                 </button>
               </SignInButton>
@@ -163,9 +163,15 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <Link
                   href="/product"
-                  className="bg-[#d97757] hover:bg-[#c5643f] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
+                  className="bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
                 >
-                  Go to App
+                  Resume Generator
+                </Link>
+                <Link
+                  href="/Roadmap"
+                  className="bg-[#52B788] hover:bg-[#40916C] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
+                >
+                  Career Roadmap
                 </Link>
                 <UserButton showName={true} />
               </div>
@@ -176,15 +182,15 @@ export default function Home() {
         {/* Hero Section */}
         <div className={`text-center py-16 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-5xl md:text-6xl font-bold mb-4 min-h-[4rem]">
-            <span className="bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent animate-gradient">
+            <span className="bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent animate-gradient">
               {typedText}
               <span className="animate-pulse">|</span>
             </span>
           </h2>
-          <p className="text-2xl font-semibold text-[#3d2e2e] dark:text-[#f5e6d3] mb-6 animate-fade-in-up">
+          <p className="text-2xl font-semibold text-[#023047] dark:text-[#E0F4F5] mb-6 animate-fade-in-up">
             Generate Resumes for your next Job at Lightning Speed
           </p>
-          <p className="text-xl text-[#8b7665] dark:text-[#b8a394] mb-12 max-w-2xl mx-auto animate-fade-in-up animation-delay-300">
+          <p className="text-xl text-[#5A8A9F] dark:text-[#7FA8B8] mb-12 max-w-2xl mx-auto animate-fade-in-up animation-delay-300">
             AI-powered assistant that generates professional resumes, cover letters, and follow-up emails in seconds
           </p>
 
@@ -193,15 +199,15 @@ export default function Home() {
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="bg-white/50 dark:bg-[#342828]/50 backdrop-blur-md p-8 rounded-2xl border border-[#e8d5c4] dark:border-[#4a3933] shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform"
+                className="bg-white/50 dark:bg-[#0D2833]/50 backdrop-blur-md p-8 rounded-2xl border border-[#D4F1F4] dark:border-[#1A4D5E] shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform"
                 style={{
                   animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                 }}
               >
-                <div className="text-4xl font-bold bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent mb-2">
+                <div className="text-4xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent mb-2">
                   {animatedStats[index]}{stat.suffix}
                 </div>
-                <div className="text-sm text-[#8b7665] dark:text-[#b8a394] font-medium">
+                <div className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8] font-medium">
                   {stat.label}
                 </div>
               </div>
@@ -219,21 +225,21 @@ export default function Home() {
                 }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-all duration-500 scale-95 group-hover:scale-100`}></div>
-                <div className={`relative bg-white dark:bg-[#342828] p-8 rounded-2xl shadow-lg border-2 transition-all duration-300 hover:scale-105 transform ${
+                <div className={`relative bg-white dark:bg-[#0D2833] p-8 rounded-2xl shadow-lg border-2 transition-all duration-300 hover:scale-105 transform ${
                   activeFeature === index
-                    ? 'border-[#d97757] dark:border-[#f4a261] shadow-2xl scale-105'
-                    : 'border-[#e8d5c4] dark:border-[#4a3933]'
+                    ? 'border-[#2E86AB] dark:border-[#4A9EBF] shadow-2xl scale-105'
+                    : 'border-[#D4F1F4] dark:border-[#1A4D5E]'
                 }`}>
                   <div className="text-5xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold mb-3 text-[#3d2e2e] dark:text-[#f5e6d3]">
+                  <h3 className="text-xl font-bold mb-3 text-[#023047] dark:text-[#E0F4F5]">
                     {feature.title}
                   </h3>
-                  <p className="text-[#8b7665] dark:text-[#b8a394]">
+                  <p className="text-[#5A8A9F] dark:text-[#7FA8B8]">
                     {feature.description}
                   </p>
-                  <div className="mt-4 h-1 bg-gradient-to-r from-transparent via-[#d97757] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="mt-4 h-1 bg-gradient-to-r from-transparent via-[#2E86AB] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
               </div>
             ))}
@@ -243,7 +249,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="group relative bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
+                <button className="group relative bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
                   <span className="relative z-10">Start Free Trial</span>
                   <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
                 </button>
@@ -251,14 +257,20 @@ export default function Home() {
             </SignedOut>
             <SignedIn>
               <Link href="/product">
-                <button className="group relative bg-gradient-to-r from-[#d97757] to-[#f4a261] hover:from-[#c5643f] hover:to-[#e8956f] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
+                <button className="group relative bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
                   <span className="relative z-10">Open Resume Generator</span>
+                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+                </button>
+              </Link>
+              <Link href="/Roadmap">
+                <button className="group relative bg-gradient-to-r from-[#52B788] to-[#74C69D] hover:from-[#40916C] hover:to-[#5FBA8C] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
+                  <span className="relative z-10">Generate a Plan</span>
                   <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
                 </button>
               </Link>
             </SignedIn>
 
-            <button className="group border-2 border-[#d97757] dark:border-[#f4a261] text-[#d97757] dark:text-[#f4a261] font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 hover:bg-[#d97757] hover:text-white shadow-lg hover:shadow-xl">
+            <button className="group border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#2E86AB] dark:text-[#4A9EBF] font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 hover:bg-[#2E86AB] hover:text-white shadow-lg hover:shadow-xl">
               Watch Demo
             </button>
           </div>
@@ -266,7 +278,7 @@ export default function Home() {
 
         {/* How It Works Section */}
         <div className="max-w-6xl mx-auto mb-16">
-          <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-[#d97757] to-[#f4a261] bg-clip-text text-transparent">
+          <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent">
             How It Works
           </h2>
           <div className="grid md:grid-cols-4 gap-6">
@@ -283,17 +295,17 @@ export default function Home() {
                   animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`
                 }}
               >
-                <div className="bg-white/70 dark:bg-[#342828]/70 backdrop-blur-sm p-6 rounded-xl border border-[#e8d5c4] dark:border-[#4a3933] hover:border-[#d97757] transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
+                <div className="bg-white/70 dark:bg-[#0D2833]/70 backdrop-blur-sm p-6 rounded-xl border border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
                   <div className="text-6xl mb-4 text-center transform group-hover:scale-110 transition-transform">
                     {item.icon}
                   </div>
-                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-[#d97757] to-[#f4a261] rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-[#2E86AB] to-[#4A9EBF] rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
                     {item.step}
                   </div>
-                  <h3 className="text-xl font-bold text-center mb-2 text-[#3d2e2e] dark:text-[#f5e6d3]">
+                  <h3 className="text-xl font-bold text-center mb-2 text-[#023047] dark:text-[#E0F4F5]">
                     {item.title}
                   </h3>
-                  <p className="text-center text-[#8b7665] dark:text-[#b8a394] text-sm">
+                  <p className="text-center text-[#5A8A9F] dark:text-[#7FA8B8] text-sm">
                     {item.desc}
                   </p>
                 </div>
@@ -304,20 +316,20 @@ export default function Home() {
 
         {/* Trust Indicators */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-4 bg-white/50 dark:bg-[#342828]/50 backdrop-blur-md px-8 py-4 rounded-full border border-[#e8d5c4] dark:border-[#4a3933] shadow-lg">
+          <div className="inline-flex items-center gap-4 bg-white/50 dark:bg-[#0D2833]/50 backdrop-blur-md px-8 py-4 rounded-full border border-[#D4F1F4] dark:border-[#1A4D5E] shadow-lg">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-sm font-medium text-[#8b7665] dark:text-[#b8a394]">Secure</span>
+              <span className="w-3 h-3 bg-[#52B788] rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium text-[#5A8A9F] dark:text-[#7FA8B8]">Secure</span>
             </div>
-            <div className="w-px h-6 bg-[#e8d5c4] dark:bg-[#4a3933]"></div>
+            <div className="w-px h-6 bg-[#D4F1F4] dark:bg-[#1A4D5E]"></div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></span>
-              <span className="text-sm font-medium text-[#8b7665] dark:text-[#b8a394]">GDPR Compliant</span>
+              <span className="w-3 h-3 bg-[#2E86AB] rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium text-[#5A8A9F] dark:text-[#7FA8B8]">GDPR Compliant</span>
             </div>
-            <div className="w-px h-6 bg-[#e8d5c4] dark:bg-[#4a3933]"></div>
+            <div className="w-px h-6 bg-[#D4F1F4] dark:bg-[#1A4D5E]"></div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></span>
-              <span className="text-sm font-medium text-[#8b7665] dark:text-[#b8a394]">Professional</span>
+              <span className="w-3 h-3 bg-[#06A77D] rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium text-[#5A8A9F] dark:text-[#7FA8B8]">Professional</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import { useState, FormEvent, useRef, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,15 +7,14 @@ import remarkBreaks from 'remark-breaks';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { UserButton } from '@clerk/nextjs';
 
-function ResumeGenerationForm() {
+function RoadmapGenerationForm() {
     const { getToken } = useAuth();
 
     // Form state
-    const [applicantName, setApplicantName] = useState('');
+    const [currentJobTitle, setCurrentJobTitle] = useState('');
+    const [targetRole, setTargetRole] = useState('');
+    const [prepTimeMonths, setPrepTimeMonths] = useState<number>(3);
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-    const [applicationDate, setApplicationDate] = useState<Date | null>(new Date());
-    const [roleAppliedFor, setRoleAppliedFor] = useState('');
-    const [YourPhoneNumber, setYourPhoneNumber] = useState('');
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [dragActive, setDragActive] = useState(false);
     const [additionalNotes, setAdditionalNotes] = useState('');
@@ -78,10 +76,9 @@ function ResumeGenerationForm() {
     };
 
     const connectWithFreshToken = async (formData: {
-        applicant_name: string;
-        application_date: string;
+        current_job_title: string;
         role_applied_for: string;
-        phone_number: string;
+        time_to_prep_in_months: number;
         resume_pdf?: string;
         resume_filename?: string;
         additional_notes: string;
@@ -109,7 +106,7 @@ function ResumeGenerationForm() {
 
             let buffer = '';
 
-            await fetchEventSource('/api/consultation', {
+            await fetchEventSource('/api/roadmap_consultation', {
                 signal: controllerRef.current.signal,
                 method: 'POST',
                 headers: {
@@ -206,19 +203,17 @@ function ResumeGenerationForm() {
 
         // Prepare form data
         const formData: {
-            applicant_name: string;
-            application_date: string;
+            current_job_title: string;
             role_applied_for: string;
-            phone_number: string;
+            time_to_prep_in_months: number;
             resume_pdf?: string;
             resume_filename?: string;
             additional_notes: string;
             model: string;
         } = {
-            applicant_name: applicantName,
-            application_date: applicationDate?.toISOString().slice(0, 10) || '',
-            role_applied_for: roleAppliedFor,
-            phone_number: YourPhoneNumber,
+            current_job_title: currentJobTitle,
+            role_applied_for: targetRole,
+            time_to_prep_in_months: prepTimeMonths,
             additional_notes: additionalNotes,
             model: selectedModel,
         };
@@ -250,13 +245,13 @@ function ResumeGenerationForm() {
         };
     }, []);
 
-    // Download resume as markdown file
-    const downloadResume = () => {
+    // Download roadmap as markdown file
+    const downloadRoadmap = () => {
         const blob = new Blob([output], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `resume_${applicantName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.md`;
+        link.download = `roadmap_${currentJobTitle.replace(/\s+/g, '_')}_to_${targetRole.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.md`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -266,7 +261,7 @@ function ResumeGenerationForm() {
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl">
             <h1 className="text-4xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-8">
-                Resume Application
+                Career Transition Roadmap
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -274,18 +269,52 @@ function ResumeGenerationForm() {
                 <div className="lg:sticky lg:top-8 h-fit">
                     <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-[#0D2833] rounded-xl shadow-lg p-8 border border-[#D4F1F4] dark:border-[#1A4D5E]">
                         <div className="space-y-2">
-                            <label htmlFor="applicant" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Applicant Name
+                            <label htmlFor="current-role" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Current Role
                             </label>
                             <input
-                                id="applicant"
+                                id="current-role"
                                 type="text"
                                 required
-                                value={applicantName}
-                                onChange={(e) => setApplicantName(e.target.value)}
+                                value={currentJobTitle}
+                                onChange={(e) => setCurrentJobTitle(e.target.value)}
                                 className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="Enter your full name"
+                                placeholder="e.g., Junior Software Developer"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="target-role" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Target Role
+                            </label>
+                            <input
+                                id="target-role"
+                                type="text"
+                                required
+                                value={targetRole}
+                                onChange={(e) => setTargetRole(e.target.value)}
+                                className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
+                                placeholder="e.g., Senior Software Engineer"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="prep-time" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Preparation Time (Months): {prepTimeMonths}
+                            </label>
+                            <input
+                                id="prep-time"
+                                type="range"
+                                min="1"
+                                max="24"
+                                value={prepTimeMonths}
+                                onChange={(e) => setPrepTimeMonths(Number(e.target.value))}
+                                className="w-full h-2 bg-[#D4F1F4] dark:bg-[#1A4D5E] rounded-lg appearance-none cursor-pointer accent-[#2E86AB]"
+                            />
+                            <div className="flex justify-between text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
+                                <span>1 month</span>
+                                <span>24 months</span>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -305,52 +334,8 @@ function ResumeGenerationForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="date" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Date of Application
-                            </label>
-                            <DatePicker
-                                id="date"
-                                selected={applicationDate}
-                                onChange={(d: Date | null) => setApplicationDate(d)}
-                                dateFormat="yyyy-MM-dd"
-                                placeholderText="Select date"
-                                required
-                                className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label htmlFor="role" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Role Applied For
-                            </label>
-                            <input
-                                id="role"
-                                type="text"
-                                required
-                                value={roleAppliedFor}
-                                onChange={(e) => setRoleAppliedFor(e.target.value)}
-                                className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="e.g., Senior Software Engineer"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="phone" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Your Phone Number
-                            </label>
-                            <input
-                                id="phone"
-                                type="tel"
-                                required
-                                value={YourPhoneNumber}
-                                onChange={(e) => setYourPhoneNumber(e.target.value)}
-                                className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="e.g., +1 (555) 123-4567"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
                             <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Upload Resume (PDF)
+                                Upload Current Resume (PDF) - Optional
                             </label>
                             <div
                                 onDragEnter={handleDrag}
@@ -359,7 +344,7 @@ function ResumeGenerationForm() {
                                 onDrop={handleDrop}
                                 className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
                                     dragActive
-                                        ? 'border-[#2E86AB] bg-[#EDF7F9] dark:bg-[#023047]'
+                                        ? 'border-[#2E86AB] bg-[#fef3ee] dark:bg-[#023047]'
                                         : 'border-[#D4F1F4] dark:border-[#1A4D5E] bg-[#F8FCFD] dark:bg-[#0A1E29]'
                                 }`}
                             >
@@ -404,7 +389,7 @@ function ResumeGenerationForm() {
                                             <span className="font-semibold">Click to upload</span> or drag and drop
                                         </p>
                                         <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                            PDF files only
+                                            PDF files only (optional)
                                         </p>
                                     </div>
                                 )}
@@ -413,24 +398,24 @@ function ResumeGenerationForm() {
 
                         <div className="space-y-2">
                             <label htmlFor="notes" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Additional Notes from Applicant
+                                Additional Information
                             </label>
                             <textarea
                                 id="notes"
-                                rows={8}
+                                rows={6}
                                 value={additionalNotes}
                                 onChange={(e) => setAdditionalNotes(e.target.value)}
                                 className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="Any additional information, skills, achievements, or special requirements..."
+                                placeholder="Mention any specific skills you want to learn, constraints, preferred learning style, or career goals..."
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] disabled:from-[#7DC4C8] disabled:to-[#A8D5D8] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                            className="w-full bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#e8956f] disabled:from-[#e8b59a] disabled:to-[#f0cdb0] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                         >
-                            {loading ? 'Generating Resume...' : 'Generate Resume'}
+                            {loading ? 'Generating Roadmap...' : 'Generate Roadmap'}
                         </button>
                     </form>
                 </div>
@@ -441,11 +426,11 @@ function ResumeGenerationForm() {
                         <section className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full border border-[#D4F1F4] dark:border-[#1A4D5E]">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-semibold text-[#023047] dark:text-[#E0F4F5]">
-                                    Generated Resume
+                                    Your Career Roadmap
                                 </h2>
                                 {!loading && (
                                     <button
-                                        onClick={downloadResume}
+                                        onClick={downloadRoadmap}
                                         className="flex items-center gap-2 bg-[#52B788] hover:bg-[#40916C] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -464,7 +449,7 @@ function ResumeGenerationForm() {
                     ) : (
                         <div className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E]">
                             <p className="text-[#5A8A9F] dark:text-[#7FA8B8] text-center">
-                                Fill out the form and click &quot;Generate Resume&quot; to see your results here
+                                Fill out the form and click &quot;Generate Roadmap&quot; to see your personalized career transition plan here
                             </p>
                         </div>
                     )}
@@ -474,7 +459,7 @@ function ResumeGenerationForm() {
     );
 }
 
-export default function Product() {
+export default function Roadmap() {
     return (
         <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821]">
             {/* User Menu in Top Right */}
@@ -482,7 +467,7 @@ export default function Product() {
                 <UserButton showName={true} />
             </div>
 
-            <ResumeGenerationForm />
+            <RoadmapGenerationForm />
         </main>
     );
 }
