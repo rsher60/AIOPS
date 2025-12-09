@@ -11,6 +11,7 @@ from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer, HTTPAuthorizationCr
 from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
+from saas.prompts.resume_generator_prompt import system_prompt
 load_dotenv()
 app = FastAPI()
 
@@ -37,17 +38,6 @@ class ResumeRequest(BaseModel):
     additional_notes: str
     model: str
 
-system_prompt = """
-You are a professional resume writer and career advisor.
-You are provided with an applicant's information for a job application.
-Your job is to create a professional resume tailored to the role they are applying for.
-
-Generate a comprehensive resume with the following sections:
-### Professional Summary
-### Key Skills
-### Tailored Resume Points for the Role
-### Suggestions for Improvement
-"""
 
 def parse_pdf_content(base64_pdf: str) -> str:
     """

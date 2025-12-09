@@ -33,8 +33,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the FastAPI server
-COPY api/server.py .
+# Copy the saas package structure
+COPY __init__.py ./saas/
+COPY prompts ./saas/prompts
+COPY api ./saas/api
 
 # Copy the Next.js static export from builder stage
 COPY --from=frontend-builder /app/out ./static
@@ -47,4 +49,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Start the FastAPI server
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "saas.api.server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
