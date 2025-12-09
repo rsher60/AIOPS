@@ -1,6 +1,6 @@
-# Healthcare Consultation Assistant
+# Job Search Consultation Assistant
 
-AI-powered medical consultation notes summarizer with patient communication drafts.
+AI-powered Job search.
 
 ## Quick Start
 
