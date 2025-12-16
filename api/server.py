@@ -1,7 +1,10 @@
 import os
 import base64
 import io
+import json
+import uuid
 from pathlib import Path
+from datetime import datetime, timezone
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +14,8 @@ from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer, HTTPAuthorizationCr
 from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
+import boto3
+from botocore.exceptions import ClientError
 from saas.prompts.resume_generator_prompt import system_prompt
 load_dotenv()
 app = FastAPI()
@@ -27,6 +32,15 @@ app.add_middleware(
 # Clerk authentication setup
 clerk_config = ClerkConfig(jwks_url=os.getenv("CLERK_JWKS_URL"))
 clerk_guard = ClerkHTTPBearer(clerk_config)
+
+# S3 client setup for application tracking
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name=os.getenv("DEFAULT_AWS_REGION", "us-east-1")
+)
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 
 class ResumeRequest(BaseModel):
     applicant_name: str
@@ -47,6 +61,14 @@ class RoadmapRequest(BaseModel):
     resume_filename: str | None = None
     additional_notes: str
     model: str
+
+
+class ApplicationRequest(BaseModel):
+    company_name: str
+    position: str
+    application_date: str
+    status: str
+    notes: str
 
 
 #Function to parse PDF content
@@ -401,6 +423,103 @@ def roadmap_consultation_summary(
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
+
+
+# Application Tracking Endpoints
+
+@app.post("/api/applications")
+def create_application(
+    request: ApplicationRequest,
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    """Create a new job application and store it in S3"""
+    user_id = creds.decoded["sub"]
+
+    if not S3_BUCKET_NAME:
+        raise HTTPException(status_code=500, detail="S3 bucket not configured")
+
+    try:
+        # Generate unique ID for the application
+        application_id = str(uuid.uuid4())
+
+        # Create application object
+        application = {
+            "id": application_id,
+            "user_id": user_id,
+            "company_name": request.company_name,
+            "position": request.position,
+            "application_date": request.application_date,
+            "status": request.status,
+            "notes": request.notes,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+
+        # Store in S3
+        s3_key = f"applications/{user_id}/{application_id}.json"
+        s3_client.put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_key,
+            Body=json.dumps(application),
+            ContentType='application/json'
+        )
+
+        return {"message": "Application created successfully", "application": application}
+
+    except ClientError as e:
+        print(f"S3 Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to store application: {str(e)}")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create application: {str(e)}")
+
+
+@app.get("/api/applications")
+def get_applications(
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    """Retrieve all job applications for the authenticated user from S3"""
+    user_id = creds.decoded["sub"]
+
+    if not S3_BUCKET_NAME:
+        raise HTTPException(status_code=500, detail="S3 bucket not configured")
+
+    try:
+        # List all objects for this user
+        s3_prefix = f"applications/{user_id}/"
+        response = s3_client.list_objects_v2(
+            Bucket=S3_BUCKET_NAME,
+            Prefix=s3_prefix
+        )
+
+        applications = []
+
+        # If no objects found, return empty list
+        if 'Contents' not in response:
+            return {"applications": applications}
+
+        # Fetch each application
+        for obj in response['Contents']:
+            try:
+                # Get the object from S3
+                file_obj = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=obj['Key'])
+                file_content = file_obj['Body'].read().decode('utf-8')
+                application = json.loads(file_content)
+                applications.append(application)
+            except Exception as e:
+                print(f"Error reading application {obj['Key']}: {e}")
+                continue
+
+        # Sort by created_at (newest first)
+        applications.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+
+        return {"applications": applications}
+
+    except ClientError as e:
+        print(f"S3 Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve applications: {str(e)}")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get applications: {str(e)}")
 
 
 @app.get("/health")

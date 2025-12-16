@@ -7,4 +7,5 @@ pydantic
 huggingface_hub
 python-dotenv
 PyPDF2
+boto3
 

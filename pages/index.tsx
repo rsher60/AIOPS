@@ -268,6 +268,12 @@ export default function Home() {
                   <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
                 </button>
               </Link>
+              <Link href="/ApplicationTracker">
+                <button className="group relative bg-gradient-to-r from-[#06A77D] to-[#2E86AB] hover:from-[#058968] hover:to-[#1B6B8F] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
+                  <span className="relative z-10">Track Applications</span>
+                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+                </button>
+              </Link>
             </SignedIn>
 
             <button className="group border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#2E86AB] dark:text-[#4A9EBF] font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 hover:bg-[#2E86AB] hover:text-white shadow-lg hover:shadow-xl">
