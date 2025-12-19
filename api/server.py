@@ -195,7 +195,7 @@ def consultation_summary(
 ):
     user_id = creds.decoded["sub"]
 
-    user_prompt = user_prompt_for_roadmap(request)
+    user_prompt = user_prompt_for(request)
     prompt = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
