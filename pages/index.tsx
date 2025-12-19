@@ -162,7 +162,7 @@ export default function Home() {
             <SignedIn>
               <div className="flex items-center gap-4">
                 <Link
-                  href="/product"
+                  href="/resume"
                   className="bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
                 >
                   Resume Generator
@@ -256,7 +256,7 @@ export default function Home() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <Link href="/product">
+              <Link href="/resume">
                 <button className="group relative bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
                   <span className="relative z-10">Open Resume Generator</span>
                   <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
