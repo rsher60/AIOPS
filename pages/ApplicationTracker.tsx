@@ -29,6 +29,10 @@ function ApplicationTrackerForm() {
     const [loading, setLoading] = useState(false);
     const [loadingApplications, setLoadingApplications] = useState(false);
 
+    // Edit modal state
+    const [editingApp, setEditingApp] = useState<Application | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+
     // Fetch applications on component mount
     useEffect(() => {
         fetchApplications();
@@ -112,6 +116,78 @@ function ApplicationTrackerForm() {
             alert('Failed to submit application. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (appId: string) => {
+        if (!confirm('Are you sure you want to delete this application?')) {
+            return;
+        }
+
+        try {
+            const jwt = await getToken();
+            if (!jwt) return;
+
+            const response = await fetch(`/api/applications/${appId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwt}`,
+                },
+            });
+
+            if (response.ok) {
+                await fetchApplications();
+                alert('Application deleted successfully!');
+            } else {
+                const errorData = await response.json();
+                alert(`Failed to delete: ${errorData.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting application:', error);
+            alert('Failed to delete application.');
+        }
+    };
+
+    const handleEdit = (app: Application) => {
+        setEditingApp(app);
+        setShowEditModal(true);
+    };
+
+    const handleUpdateSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!editingApp) return;
+
+        try {
+            const jwt = await getToken();
+            if (!jwt) return;
+
+            const response = await fetch(`/api/applications/${editingApp.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwt}`,
+                },
+                body: JSON.stringify({
+                    company_name: editingApp.company_name,
+                    position: editingApp.position,
+                    application_date: editingApp.application_date,
+                    status: editingApp.status,
+                    notes: editingApp.notes,
+                }),
+            });
+
+            if (response.ok) {
+                setShowEditModal(false);
+                setEditingApp(null);
+                await fetchApplications();
+                alert('Application updated successfully!');
+            } else {
+                const errorData = await response.json();
+                alert(`Failed to update: ${errorData.detail || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error updating application:', error);
+            alert('Failed to update application.');
         }
     };
 
@@ -268,6 +344,9 @@ function ApplicationTrackerForm() {
                                             <th className="px-6 py-3 text-left text-xs font-medium text-[#023047] dark:text-[#E0F4F5] uppercase tracking-wider">
                                                 Notes
                                             </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-[#023047] dark:text-[#E0F4F5] uppercase tracking-wider">
+                                                Actions
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#D4F1F4] dark:divide-[#1A4D5E]">
@@ -298,6 +377,22 @@ function ApplicationTrackerForm() {
                                                         {app.notes || '-'}
                                                     </div>
                                                 </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleEdit(app)}
+                                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(app.id)}
+                                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -307,6 +402,100 @@ function ApplicationTrackerForm() {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            {showEditModal && editingApp && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-[#0D2833] rounded-xl shadow-2xl p-8 max-w-md w-full border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        <h3 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-6">
+                            Edit Application
+                        </h3>
+                        <form onSubmit={handleUpdateSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    Company Name
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editingApp.company_name}
+                                    onChange={(e) => setEditingApp({ ...editingApp, company_name: e.target.value })}
+                                    className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] dark:bg-[#0A1E29] dark:text-[#E0F4F5]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    Position
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editingApp.position}
+                                    onChange={(e) => setEditingApp({ ...editingApp, position: e.target.value })}
+                                    className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] dark:bg-[#0A1E29] dark:text-[#E0F4F5]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    Application Date
+                                </label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={editingApp.application_date}
+                                    onChange={(e) => setEditingApp({ ...editingApp, application_date: e.target.value })}
+                                    className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] dark:bg-[#0A1E29] dark:text-[#E0F4F5]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    Status
+                                </label>
+                                <select
+                                    value={editingApp.status}
+                                    onChange={(e) => setEditingApp({ ...editingApp, status: e.target.value })}
+                                    className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] dark:bg-[#0A1E29] dark:text-[#E0F4F5]"
+                                >
+                                    <option value="applied">Applied</option>
+                                    <option value="interviewing">Interviewing</option>
+                                    <option value="offered">Offered</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="withdrawn">Withdrawn</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    Notes
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={editingApp.notes}
+                                    onChange={(e) => setEditingApp({ ...editingApp, notes: e.target.value })}
+                                    className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] dark:bg-[#0A1E29] dark:text-[#E0F4F5]"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="submit"
+                                    className="flex-1 bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                                >
+                                    Update
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setEditingApp(null);
+                                    }}
+                                    className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg transition-all"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

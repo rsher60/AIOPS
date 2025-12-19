@@ -495,3 +495,77 @@ docker tag resumegenerator-app:latest $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGIO
 
 # 4. Push to ECR
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
+
+# Force App Runner to pull and deploy the new image
+  aws apprunner start-deployment \
+    --service-arn $(aws apprunner list-services --region $DEFAULT_AWS_REGION --query 'ServiceSummaryList[0].ServiceArn' --output text) \
+    --region $DEFAULT_AWS_REGION
+
+
+
+
+## Commands to resolve the docker caching issue with ECR 
+
+
+### Commands to build and push ECR image with unique tags
+
+# 1. Authenticate Docker to ECR
+aws ecr get-login-password --region $DEFAULT_AWS_REGION | \
+  docker login --username AWS --password-stdin \
+  $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com
+
+# 2. Create a unique tag (using timestamp)
+IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
+# OR use git commit SHA if you're in a git repo:
+# IMAGE_TAG=$(git rev-parse --short HEAD)
+
+echo "Building with tag: $IMAGE_TAG"
+
+# 3. Clean up old images (optional)
+docker rmi resumegenerator-app:$IMAGE_TAG 2>/dev/null || true
+docker builder prune -f
+
+# 4. Build with unique tag
+docker build \
+  --no-cache \
+  --pull \
+  --platform linux/amd64 \
+  --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" \
+  -t resumegenerator-app:$IMAGE_TAG \
+  -t resumegenerator-app:latest \
+  .
+
+# 5. Tag for ECR with unique tag AND latest
+docker tag resumegenerator-app:$IMAGE_TAG \
+  $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG
+
+docker tag resumegenerator-app:$IMAGE_TAG \
+  $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
+
+# 6. Push BOTH tags to ECR
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
+
+# 7. Verify the new image was pushed (check digest)
+aws ecr describe-images \
+  --repository-name resumegenerator-app \
+  --region $DEFAULT_AWS_REGION \
+  --query 'sort_by(imageDetails,& imagePushedAt)[-1].[imageTags[0], imageDigest, imagePushedAt]' \
+  --output table
+
+# 8. Update App Runner to use the specific tag (CRITICAL!)
+SERVICE_ARN=$(aws apprunner list-services \
+  --region $DEFAULT_AWS_REGION \
+  --query 'ServiceSummaryList[0].ServiceArn' \
+  --output text)
+
+# Update the service to point to the new specific tag
+aws apprunner update-service \
+  --service-arn $SERVICE_ARN \
+  --source-configuration "ImageRepository={ImageIdentifier=$AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG,ImageRepositoryType=ECR}" \
+  --region $DEFAULT_AWS_REGION
+
+# 9. Wait for deployment to complete
+aws apprunner wait service-updated --service-arn $SERVICE_ARN --region $DEFAULT_AWS_REGION
+
+echo "Deployment complete with image tag: $IMAGE_TAG"

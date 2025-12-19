@@ -25,6 +25,7 @@ services:
     volumes:
       # Mount the FastAPI backend code for hot reload
       - ./api:/app/saas/api
+      - ./pages:/app/saas/pages
       - ./prompts:/app/saas/prompts
     command: uvicorn saas.api.server:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:

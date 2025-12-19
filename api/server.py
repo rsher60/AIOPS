@@ -522,6 +522,87 @@ def get_applications(
         raise HTTPException(status_code=500, detail=f"Failed to get applications: {str(e)}")
 
 
+@app.put("/api/applications/{application_id}")
+def update_application(
+    application_id: str,
+    request: ApplicationRequest,
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    """Update an existing job application in S3"""
+    user_id = creds.decoded["sub"]
+
+    if not S3_BUCKET_NAME:
+        raise HTTPException(status_code=500, detail="S3 bucket not configured")
+
+    try:
+        # Check if application exists and belongs to user
+        s3_key = f"applications/{user_id}/{application_id}.json"
+
+        try:
+            existing_obj = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+            existing_app = json.loads(existing_obj['Body'].read().decode('utf-8'))
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                raise HTTPException(status_code=404, detail="Application not found")
+            raise
+
+        # Update application data
+        updated_application = {
+            "id": application_id,
+            "user_id": user_id,
+            "company_name": request.company_name,
+            "position": request.position,
+            "application_date": request.application_date,
+            "status": request.status,
+            "notes": request.notes,
+            "created_at": existing_app.get("created_at", datetime.now(timezone.utc).isoformat()),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+
+        # Store updated application in S3
+        s3_client.put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_key,
+            Body=json.dumps(updated_application),
+            ContentType='application/json'
+        )
+
+        return {"message": "Application updated successfully", "application": updated_application}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update application: {str(e)}")
+
+
+@app.delete("/api/applications/{application_id}")
+def delete_application(
+    application_id: str,
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    """Delete a job application from S3"""
+    user_id = creds.decoded["sub"]
+
+    if not S3_BUCKET_NAME:
+        raise HTTPException(status_code=500, detail="S3 bucket not configured")
+
+    try:
+        # Delete from S3
+        s3_key = f"applications/{user_id}/{application_id}.json"
+
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+            return {"message": "Application deleted successfully"}
+        except ClientError as e:
+            print(f"S3 Error: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to delete application: {str(e)}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete application: {str(e)}")
+
+
 @app.get("/health")
 def health_check():
     """Health check endpoint for AWS App Runner"""
