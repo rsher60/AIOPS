@@ -1,5 +1,6 @@
 import { useState, FormEvent, useRef, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, SignInButton, SignedIn, SignedOut } from '@clerk/nextjs';
+import Link from 'next/link';
 import Image from 'next/image';
 import 'react-datepicker/dist/react-datepicker.css';
 import ReactMarkdown from 'react-markdown';
@@ -7,6 +8,65 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { UserButton } from '@clerk/nextjs';
+
+// Side Panel Component
+function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+    return (
+        <>
+            {isOpen && <div className="fixed inset-0 bg-black/50 z-[100]" onClick={onClose} />}
+            <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0D2833] shadow-2xl z-[101] transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between p-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        <h2 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5]">Menu</h2>
+                        <button onClick={onClose} className="p-2 hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="p-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        <SignedIn>
+                            <div className="flex items-center gap-4">
+                                <UserButton />
+                                <span className="text-[#023047] dark:text-[#E0F4F5] font-medium">My Account</span>
+                            </div>
+                        </SignedIn>
+                    </div>
+                    <nav className="flex-1 overflow-y-auto p-4">
+                        <Link href="/resume" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#2E86AB] to-[#4A9EBF] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">📋</div>
+                            <div>
+                                <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Resume Generator</h3>
+                                <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Create professional resumes</p>
+                            </div>
+                        </Link>
+                        <Link href="/Roadmap" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#52B788] to-[#74C69D] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🗺️</div>
+                            <div>
+                                <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Career Roadmap</h3>
+                                <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Plan your career path</p>
+                            </div>
+                        </Link>
+                        <Link href="/ApplicationTracker" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#06A77D] to-[#2E86AB] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">📊</div>
+                            <div>
+                                <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Application Tracker</h3>
+                                <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Track your applications</p>
+                            </div>
+                        </Link>
+                        <Link href="/" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#FFB703] to-[#FB8500] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🏠</div>
+                            <div>
+                                <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Home</h3>
+                                <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Back to landing page</p>
+                            </div>
+                        </Link>
+                    </nav>
+                </div>
+            </div>
+        </>
+    );
+}
 
 function RoadmapGenerationForm() {
     const { getToken } = useAuth();
@@ -261,7 +321,7 @@ function RoadmapGenerationForm() {
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl">
-            <h1 className="text-4xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-8">
+            <h1 className="text-4xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-8 text-center">
                 Career Transition Roadmap
             </h1>
 
@@ -472,53 +532,21 @@ function RoadmapGenerationForm() {
 }
 
 export default function Roadmap() {
-    const [showMenu, setShowMenu] = useState(false);
+    const [sidePanelOpen, setSidePanelOpen] = useState(false);
 
     return (
         <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821]">
-            {/* User Menu in Top Right */}
-            <div className="absolute top-4 right-4 flex items-center gap-6 z-50">
-                <UserButton showName={true} />
-                <div className="relative menu-container ml-2">
-                    <button
-                        onClick={() => setShowMenu(!showMenu)}
-                        className="flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                        </svg>
-                        <span>Menu</span>
-                    </button>
-                    {showMenu && (
-                        <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-[#0D2833] border-2 border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg shadow-2xl overflow-hidden z-[9999]">
-                            <a
-                                href="/resume"
-                                className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
-                                style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
-                            >
-                                <span className="text-2xl">📋</span>
-                                <span className="font-medium">Resume Generator</span>
-                            </a>
-                            <a
-                                href="/Roadmap"
-                                className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
-                                style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
-                            >
-                                <span className="text-2xl">🗺️</span>
-                                <span className="font-medium">Career Roadmap</span>
-                            </a>
-                            <a
-                                href="/ApplicationTracker"
-                                className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all"
-                                style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
-                            >
-                                <span className="text-2xl">📊</span>
-                                <span className="font-medium">Application Tracker</span>
-                            </a>
-                        </div>
-                    )}
-                </div>
-            </div>
+            <SidePanel isOpen={sidePanelOpen} onClose={() => setSidePanelOpen(false)} />
+
+            <button
+                onClick={() => setSidePanelOpen(true)}
+                className="fixed top-4 left-4 z-50 flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-xl hover:scale-105 transition-all"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span>Menu</span>
+            </button>
 
             <RoadmapGenerationForm />
         </main>

@@ -1,15 +1,139 @@
 "use client"
 
 import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
 import Image from 'next/image';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+
+// Side Panel Component
+function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <>
+      {/* Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[100] transition-opacity"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Side Panel */}
+      <div
+        className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0D2833] shadow-2xl z-[101] transform transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E]">
+            <h2 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5]">Menu</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] rounded-lg transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#023047] dark:text-[#E0F4F5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* User Profile Section */}
+          <div className="p-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E]">
+            <SignedIn>
+              <div className="flex items-center gap-4">
+                <UserButton />
+                <span className="text-[#023047] dark:text-[#E0F4F5] font-medium">My Account</span>
+              </div>
+            </SignedIn>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="w-full bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-3 px-6 rounded-lg transition-all">
+                  Sign In
+                </button>
+              </SignInButton>
+            </SignedOut>
+          </div>
+
+          {/* Navigation Links */}
+          <SignedIn>
+            <nav className="flex-1 overflow-y-auto p-4">
+              <Link
+                href="/resume"
+                className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group"
+                onClick={onClose}
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#2E86AB] to-[#4A9EBF] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  📋
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Resume Generator</h3>
+                  <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Create professional resumes</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/Roadmap"
+                className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group"
+                onClick={onClose}
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#52B788] to-[#74C69D] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  🗺️
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Career Roadmap</h3>
+                  <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Plan your career path</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/ApplicationTracker"
+                className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group"
+                onClick={onClose}
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#06A77D] to-[#2E86AB] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  📊
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Application Tracker</h3>
+                  <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Track your applications</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/"
+                className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group"
+                onClick={onClose}
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#FFB703] to-[#FB8500] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  🏠
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Home</h3>
+                  <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Back to landing page</p>
+                </div>
+              </Link>
+            </nav>
+          </SignedIn>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-[#D4F1F4] dark:border-[#1A4D5E]">
+            <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] text-center">
+              © 2025 ResumeGenerator Pro
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default function Home() {
   const [typedText, setTypedText] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeFeature, setActiveFeature] = useState(0);
-  const [showMenu, setShowMenu] = useState(false);
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const fullText = "Transform Your Career with AI";
@@ -96,7 +220,12 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821] overflow-hidden relative">
+    <>
+      <Head>
+        <title>ResumeGenerator Pro - Transform Your Career with AI</title>
+        <meta name="description" content="AI-powered resume generation, career roadmaps, and application tracking to help you land your dream job" />
+      </Head>
+      <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821] overflow-hidden relative">
       {/* Animated background shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -148,63 +277,26 @@ export default function Home() {
         }}
       />
 
+      {/* Side Panel */}
+      <SidePanel isOpen={sidePanelOpen} onClose={() => setSidePanelOpen(false)} />
+
       <div className="container mx-auto px-4 py-12 relative z-10">
         {/* Navigation */}
         <nav className={`flex justify-between items-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setSidePanelOpen(true)}
+            className="flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span>Menu</span>
+          </button>
+
           <h1 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] hover:scale-105 transition-transform cursor-pointer">
             ResumeGenerator Pro
           </h1>
-          <div className="flex items-center gap-6">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform">
-                  Sign In
-                </button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton showName={true} />
-              <div className="relative menu-container ml-2">
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span>Menu</span>
-                </button>
-                {showMenu && (
-                  <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-[#0D2833] border-2 border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg shadow-2xl overflow-hidden z-[9999]">
-                    <a
-                      href="/resume"
-                      className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
-                      style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
-                    >
-                      <span className="text-2xl">📋</span>
-                      <span className="font-medium">Resume Generator</span>
-                    </a>
-                    <a
-                      href="/Roadmap"
-                      className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
-                      style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
-                    >
-                      <span className="text-2xl">🗺️</span>
-                      <span className="font-medium">Career Roadmap</span>
-                    </a>
-                    <a
-                      href="/ApplicationTracker"
-                      className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all"
-                      style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
-                    >
-                      <span className="text-2xl">📊</span>
-                      <span className="font-medium">Application Tracker</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-            </SignedIn>
-          </div>
         </nav>
 
         {/* Hero Section */}
@@ -408,5 +500,6 @@ export default function Home() {
         }
       `}</style>
     </main>
+    </>
   );
 }

@@ -569,3 +569,11 @@ aws apprunner update-service \
 aws apprunner wait service-updated --service-arn $SERVICE_ARN --region $DEFAULT_AWS_REGION
 
 echo "Deployment complete with image tag: $IMAGE_TAG"
+
+
+
+
+## UI Learnings
+
+I ran into a issue where for the first time when the user was clikcing on the links, it was not redirecting and this was happening because I was using regular HTML Anchor tags (<>) instead of Next.Js Link components. 
+This was causing a full page reload on the first click of client side navigation
