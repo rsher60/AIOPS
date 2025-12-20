@@ -45,9 +45,9 @@ export default function Home() {
   }, []);
 
   const stats = [
-    { number: 10000, label: "Resumes Generated", suffix: "+" },
+    { number: 100, label: "Resumes Generated", suffix: "+" },
     { number: 98, label: "Success Rate", suffix: "%" },
-    { number: 50, label: "Countries", suffix: "+" },
+    { number: 50, label: "Users", suffix: "+" },
   ];
 
   const features = [
@@ -64,9 +64,9 @@ export default function Home() {
       color: "from-[#52B788] to-[#74C69D]"
     },
     {
-      icon: "📧",
-      title: "Email Integration",
-      description: "Draft professional cover letters and follow-up emails automatically",
+      icon: "📊",
+      title: "Application Tracking",
+      description: "Track your job applications,follow-ups and keep them updated all in one place",
       color: "from-[#06A77D] to-[#2E86AB]"
     },
   ];

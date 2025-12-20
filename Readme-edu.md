@@ -519,7 +519,7 @@ IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
 # OR use git commit SHA if you're in a git repo:
 # IMAGE_TAG=$(git rev-parse --short HEAD)
 
-echo "Building with tag: $IMAGE_TAG"
+
 
 # 3. Clean up old images (optional)
 docker rmi resumegenerator-app:$IMAGE_TAG 2>/dev/null || true
