@@ -1,5 +1,6 @@
 import { useState, FormEvent, useRef, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import Image from 'next/image';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import ReactMarkdown from 'react-markdown';
@@ -470,16 +471,68 @@ function ResumeGenerationForm() {
                     )}
                 </div>
             </div>
+
+            {/* Footer Image */}
+            <div className="mt-16 flex justify-center pb-8">
+                <Image
+                    src="/sbstack.jpg"
+                    alt="SBStack"
+                    width={800}
+                    height={200}
+                    className="rounded-lg shadow-lg"
+                />
+            </div>
         </div>
     );
 }
 
 export default function Product() {
+    const [showMenu, setShowMenu] = useState(false);
+
     return (
         <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821]">
             {/* User Menu in Top Right */}
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 flex items-center gap-6 z-50">
                 <UserButton showName={true} />
+                <div className="relative menu-container ml-2">
+                    <button
+                        onClick={() => setShowMenu(!showMenu)}
+                        className="flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <span>Menu</span>
+                    </button>
+                    {showMenu && (
+                        <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-[#0D2833] border-2 border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg shadow-2xl overflow-hidden z-[9999]">
+                            <a
+                                href="/resume"
+                                className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
+                                style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
+                            >
+                                <span className="text-2xl">📋</span>
+                                <span className="font-medium">Resume Generator</span>
+                            </a>
+                            <a
+                                href="/Roadmap"
+                                className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
+                                style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
+                            >
+                                <span className="text-2xl">🗺️</span>
+                                <span className="font-medium">Career Roadmap</span>
+                            </a>
+                            <a
+                                href="/ApplicationTracker"
+                                className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all"
+                                style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
+                            >
+                                <span className="text-2xl">📊</span>
+                                <span className="font-medium">Application Tracker</span>
+                            </a>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <ResumeGenerationForm />

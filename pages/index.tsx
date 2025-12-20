@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 
 export default function Home() {
@@ -9,10 +9,13 @@ export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeFeature, setActiveFeature] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const fullText = "Transform Your Career with AI";
 
   useEffect(() => {
+    setIsMounted(true);
     setIsVisible(true);
     let currentIndex = 0;
     const typingInterval = setInterval(() => {
@@ -45,28 +48,28 @@ export default function Home() {
   }, []);
 
   const stats = [
-    { number: 100, label: "Resumes Generated", suffix: "+" },
-    { number: 98, label: "Success Rate", suffix: "%" },
-    { number: 50, label: "Users", suffix: "+" },
+    { number: 100, label: "AI Generations", suffix: "+" },
+    { number: 3, label: "AI Models", suffix: "" },
+    { number: 50, label: "Active Users", suffix: "+" },
   ];
 
   const features = [
     {
       icon: "📋",
-      title: "Professional Resumes",
-      description: "Generate comprehensive technical resumes tailored to your job applications with AI-powered insights",
+      title: "AI Resume Generation",
+      description: "Generate professional, ATS-optimized resumes tailored to specific roles using GPT-4, Grok, or Llama AI models with real-time streaming",
       color: "from-[#2E86AB] to-[#4A9EBF]"
     },
     {
-      icon: "✨",
-      title: "Smart Tailoring",
-      description: "Automatically adapt your resume to match job descriptions and industry standards",
+      icon: "🗺️",
+      title: "Career Roadmap Planning",
+      description: "Get personalized month-by-month career transition plans with learning resources, project ideas, and interview preparation strategies",
       color: "from-[#52B788] to-[#74C69D]"
     },
     {
       icon: "📊",
       title: "Application Tracking",
-      description: "Track your job applications,follow-ups and keep them updated all in one place",
+      description: "Organize and track all your job applications with status updates, notes, and follow-up reminders in one centralized dashboard",
       color: "from-[#06A77D] to-[#2E86AB]"
     },
   ];
@@ -122,7 +125,7 @@ export default function Home() {
         />
 
         {/* Floating particles */}
-        {[...Array(20)].map((_, i) => (
+        {isMounted && [...Array(20)].map((_, i) => (
           <div
             key={i}
             className="absolute w-2 h-2 bg-[#2E86AB]/30 rounded-full"
@@ -151,7 +154,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] hover:scale-105 transition-transform cursor-pointer">
             ResumeGenerator Pro
           </h1>
-          <div>
+          <div className="flex items-center gap-6">
             <SignedOut>
               <SignInButton mode="modal">
                 <button className="bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform">
@@ -160,20 +163,45 @@ export default function Home() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/resume"
-                  className="bg-[#2E86AB] hover:bg-[#1B6B8F] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
+              <UserButton showName={true} />
+              <div className="relative menu-container ml-2">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
                 >
-                  Resume Generator
-                </Link>
-                <Link
-                  href="/Roadmap"
-                  className="bg-[#52B788] hover:bg-[#40916C] text-white font-medium py-2 px-6 rounded-lg transition-all shadow-md hover:shadow-xl hover:scale-105 transform"
-                >
-                  Career Roadmap
-                </Link>
-                <UserButton showName={true} />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>Menu</span>
+                </button>
+                {showMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-[#0D2833] border-2 border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg shadow-2xl overflow-hidden z-[9999]">
+                    <a
+                      href="/resume"
+                      className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
+                      style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
+                    >
+                      <span className="text-2xl">📋</span>
+                      <span className="font-medium">Resume Generator</span>
+                    </a>
+                    <a
+                      href="/Roadmap"
+                      className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all border-b border-[#D4F1F4] dark:border-[#1A4D5E]"
+                      style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
+                    >
+                      <span className="text-2xl">🗺️</span>
+                      <span className="font-medium">Career Roadmap</span>
+                    </a>
+                    <a
+                      href="/ApplicationTracker"
+                      className="flex items-center gap-3 px-4 py-3 text-[#023047] dark:text-[#E0F4F5] hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all"
+                      style={{ textDecoration: 'none', display: 'flex', cursor: 'pointer' }}
+                    >
+                      <span className="text-2xl">📊</span>
+                      <span className="font-medium">Application Tracker</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </SignedIn>
           </div>
@@ -255,26 +283,6 @@ export default function Home() {
                 </button>
               </SignInButton>
             </SignedOut>
-            <SignedIn>
-              <Link href="/resume">
-                <button className="group relative bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
-                  <span className="relative z-10">Open Resume Generator</span>
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
-                </button>
-              </Link>
-              <Link href="/Roadmap">
-                <button className="group relative bg-gradient-to-r from-[#52B788] to-[#74C69D] hover:from-[#40916C] hover:to-[#5FBA8C] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
-                  <span className="relative z-10">Generate a Plan</span>
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
-                </button>
-              </Link>
-              <Link href="/ApplicationTracker">
-                <button className="group relative bg-gradient-to-r from-[#06A77D] to-[#2E86AB] hover:from-[#058968] hover:to-[#1B6B8F] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
-                  <span className="relative z-10">Track Applications</span>
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
-                </button>
-              </Link>
-            </SignedIn>
 
             <button className="group border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#2E86AB] dark:text-[#4A9EBF] font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 hover:bg-[#2E86AB] hover:text-white shadow-lg hover:shadow-xl">
               Watch Demo
@@ -289,10 +297,10 @@ export default function Home() {
           </h2>
           <div className="grid md:grid-cols-4 gap-6">
             {[
-              { step: "1", title: "Sign Up", icon: "👤", desc: "Create your free account" },
-              { step: "2", title: "Upload Resume", icon: "📄", desc: "Upload your existing resume or start fresh" },
-              { step: "3", title: "AI Magic", icon: "✨", desc: "Let AI enhance and tailor your resume" },
-              { step: "4", title: "Download", icon: "⬇️", desc: "Get your professional resume" },
+              { step: "1", title: "Sign Up", icon: "👤", desc: "Create your account with Clerk authentication" },
+              { step: "2", title: "Choose Your Tool", icon: "🎯", desc: "Resume Generator, Career Roadmap, or Application Tracker" },
+              { step: "3", title: "AI-Powered Results", icon: "🤖", desc: "Get instant AI-generated content tailored to your needs" },
+              { step: "4", title: "Track & Succeed", icon: "📈", desc: "Manage applications and land your dream job" },
             ].map((item, index) => (
               <div
                 key={index}
@@ -338,6 +346,17 @@ export default function Home() {
               <span className="text-sm font-medium text-[#5A8A9F] dark:text-[#7FA8B8]">Professional</span>
             </div>
           </div>
+        </div>
+
+        {/* Footer Image */}
+        <div className="mt-16 flex justify-center">
+          <Image
+            src="/sbstack.jpg"
+            alt="SBStack"
+            width={800}
+            height={200}
+            className="rounded-lg shadow-lg"
+          />
         </div>
       </div>
 
