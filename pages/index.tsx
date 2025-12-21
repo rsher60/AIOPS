@@ -420,6 +420,17 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Footer Image */}
+        <div className="mb-8 flex justify-center">
+          <Image
+            src="/sbstack.jpg"
+            alt="SBStack"
+            width={800}
+            height={200}
+            className="rounded-lg shadow-lg"
+          />
+        </div>
+
         {/* Trust Indicators */}
         <div className="text-center">
           <div className="inline-flex items-center gap-4 bg-white/50 dark:bg-[#0D2833]/50 backdrop-blur-md px-8 py-4 rounded-full border border-[#D4F1F4] dark:border-[#1A4D5E] shadow-lg">
@@ -438,17 +449,6 @@ export default function Home() {
               <span className="text-sm font-medium text-[#5A8A9F] dark:text-[#7FA8B8]">Professional</span>
             </div>
           </div>
-        </div>
-
-        {/* Footer Image */}
-        <div className="mt-16 flex justify-center">
-          <Image
-            src="/sbstack.jpg"
-            alt="SBStack"
-            width={800}
-            height={200}
-            className="rounded-lg shadow-lg"
-          />
         </div>
       </div>
 
