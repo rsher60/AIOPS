@@ -577,3 +577,21 @@ echo "Deployment complete with image tag: $IMAGE_TAG"
 
 I ran into a issue where for the first time when the user was clikcing on the links, it was not redirecting and this was happening because I was using regular HTML Anchor tags (<>) instead of Next.Js Link components. 
 This was causing a full page reload on the first click of client side navigation
+
+
+## Issue with API Gateway
+
+MY API Gateway was working, but the static assets (CSS, JavaScript, images) were not loading
+properly. I solved it by adding a catch all rout and doing the following steps:
+
+Integration settings:
+
+Integration type: HTTP
+HTTP method: ANY
+Integration URL: https://cfcygppnyr.us-east-1.awsapprunner.com/{proxy} (note the {proxy} parameter)
+
+This ensures requests like:
+
+/static/css/main.css
+/assets/js/app.js
+/images/logo.png
