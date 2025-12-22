@@ -588,7 +588,7 @@ Integration settings:
 
 Integration type: HTTP
 HTTP method: ANY
-Integration URL: https://cfcygppnyr.us-east-1.awsapprunner.com/{proxy} (note the {proxy} parameter)
+Integration URL <>/{proxy} (note the {proxy} parameter)
 
 This ensures requests like:
 
