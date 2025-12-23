@@ -316,34 +316,103 @@ function ResumeGenerationForm() {
         try {
             const filename = `resume_${applicantName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
 
-            // Call API endpoint to convert markdown to docx
-            const response = await fetch('/api/convert-to-docx', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    markdown: output,
-                    filename: filename,
-                }),
-            });
+            // Dynamically import docx and file-saver for client-side generation
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+            const fileSaver = await import('file-saver');
+            const saveAs = fileSaver.default || fileSaver.saveAs;
 
-            if (!response.ok) {
-                throw new Error('Failed to convert to DOCX');
+            // Parse markdown and create document sections
+            const sections: InstanceType<typeof Paragraph>[] = [];
+            const lines = output.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                if (!line) {
+                    sections.push(new Paragraph({ text: '' }));
+                    continue;
+                }
+
+                // H1 headers
+                if (line.startsWith('# ')) {
+                    sections.push(
+                        new Paragraph({
+                            text: line.replace('# ', ''),
+                            heading: HeadingLevel.HEADING_1,
+                            spacing: { before: 240, after: 120 },
+                        })
+                    );
+                }
+                // H2 headers
+                else if (line.startsWith('## ')) {
+                    sections.push(
+                        new Paragraph({
+                            text: line.replace('## ', ''),
+                            heading: HeadingLevel.HEADING_2,
+                            spacing: { before: 200, after: 100 },
+                        })
+                    );
+                }
+                // H3 headers
+                else if (line.startsWith('### ')) {
+                    sections.push(
+                        new Paragraph({
+                            text: line.replace('### ', ''),
+                            heading: HeadingLevel.HEADING_3,
+                            spacing: { before: 160, after: 80 },
+                        })
+                    );
+                }
+                // Bullet points
+                else if (line.startsWith('- ') || line.startsWith('* ')) {
+                    const cleanText = line.replace(/^[-*]\s+/, '');
+                    sections.push(
+                        new Paragraph({
+                            text: cleanText,
+                            bullet: { level: 0 },
+                            spacing: { before: 60, after: 60 },
+                        })
+                    );
+                }
+                // Regular text with bold/italic support
+                else {
+                    const children: InstanceType<typeof TextRun>[] = [];
+                    const parts = line.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
+
+                    for (const part of parts) {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                            children.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+                        } else if (part.startsWith('*') && part.endsWith('*')) {
+                            children.push(new TextRun({ text: part.slice(1, -1), italics: true }));
+                        } else if (part.startsWith('`') && part.endsWith('`')) {
+                            children.push(new TextRun({ text: part.slice(1, -1), font: 'Courier New' }));
+                        } else if (part) {
+                            children.push(new TextRun({ text: part }));
+                        }
+                    }
+
+                    sections.push(
+                        new Paragraph({
+                            children: children.length > 0 ? children : [new TextRun({ text: line })],
+                            spacing: { before: 60, after: 60 },
+                        })
+                    );
+                }
             }
 
-            // Get the blob from response
-            const blob = await response.blob();
+            // Create the document
+            const doc = new Document({
+                sections: [
+                    {
+                        properties: {},
+                        children: sections,
+                    },
+                ],
+            });
 
-            // Create download link
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            // Generate blob and download
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, filename);
         } catch (error) {
             console.error('Error downloading DOCX:', error);
             alert('Error generating DOCX file. Please try again.');

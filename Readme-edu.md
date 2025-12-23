@@ -595,3 +595,110 @@ This ensures requests like:
 /static/css/main.css
 /assets/js/app.js
 /images/logo.png
+
+
+### Beta Testing Setup
+
+**Setup Phase:**
+- [ ] Lambda function created with token validation code
+- [ ] Lambda function deployed
+- [ ] Lambda authorizer created in API Gateway
+- [ ] Identity source configured: `$request.header.Authorization`
+- [ ] Authorizer attached to all routes
+- [ ] API Gateway deployed
+
+**Testing Phase:**
+- [ ] Test without token (should fail with 401)
+- [ ] Test with valid token (should work)
+- [ ] Test all routes (/roadmap, /product, etc.)
+- [ ] Test with invalid token (should fail)
+
+**Distribution Phase:**
+- [ ] Generate unique token for each beta tester
+- [ ] Send access instructions to beta testers
+- [ ] Set up feedback channel
+
+
+
+## What I did was :
+
+1) I created a HTTP API GAteway and then used a Lambda to invoke the auth check
+
+
+
+### SYStem Design 
+
+AWS API Gateway Lambda Authorizer with Query String Tokens
+Documentation Summary
+
+Overview
+This setup implements a Lambda-based authentication layer for AWS API Gateway that sits in front of an App Runner application. It restricts API access to authorized test users while allowing static assets (CSS, JS, images) to load without authentication.
+
+Architecture
+User Request with Token
+         ↓
+    API Gateway (HTTP API)
+         ↓
+   Lambda Authorizer (validates token)
+         ↓
+   Authorization Decision (Allow/Deny)
+         ↓
+    App Runner Application
+         ↓
+    Response to User
+Components:
+
+API Gateway (HTTP API): Entry point for all requests, acts as a proxy
+Lambda Authorizer: Validates tokens and allows/denies access (ONLY for authentication)
+App Runner: Hosts and runs your actual application
+Token Storage: Hard-coded in Lambda authorizer (for testing)
+
+
+How It Works
+Request Flow:
+
+User makes request with token in query string:
+
+   https://api-url.com/?token=user1-token-abc123
+
+API Gateway receives request and invokes the Lambda Authorizer
+Lambda Authorizer checks:
+
+Is this a static asset (.css, .js, .png, etc.)? → Allow without token
+Is this an HTML/API request? → Check token validity
+Valid token? → Allow access
+Invalid/missing token? → Deny access
+
+
+API Gateway enforces the decision:
+
+If Allowed → Forwards request to App Runner
+If Denied → Returns 401/403 to user
+
+
+App Runner serves the application content
+
+
+The Critical Issue We Solved
+Problem:
+Initially, the Lambda Authorizer wasn't being called for CSS/JS file requests. API Gateway was blocking them with 401 errors before the Lambda could execute, preventing your App Runner application's static assets from loading.
+Root Cause:
+The Identity Source was set to $request.querystring.token. When CSS/JS files were requested (without ?token= in their URLs), API Gateway immediately returned 401 because the identity source was missing.
+Solution:
+Changed Identity Source from $request.querystring.token to $request.header.user-agent
+Why this works:
+
+Every HTTP request includes a user-agent header
+API Gateway now calls the Lambda for ALL requests
+Lambda code decides what to allow/deny based on file type and token presence
+Static assets load without tokens and are forwarded to App Runner
+HTML pages still require valid tokens
+
+
+### 405 Errors for specific Paths 
+
+> I am getting a 405 error when trying to download the generated resume but not getting the same error in local. Please make 
+required changes to make sure that it works. I believe its because of the convert-tp-docx.ts file 
+  ⎿  ⧉ Selected 1 lines from api/server.py in Visual Studio Code
+
+⏺ The 405 error is happening because your app is using next export for static deployment, which disables API routes. I saw this warning in the build output. I'll fix this by implementing client-side DOCX generation instead of using a server API.

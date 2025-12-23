@@ -1,16 +1,2 @@
-declare module 'html-to-docx' {
-  function HTMLtoDOCX(
-    htmlString: string,
-    headerHTMLString?: string | null,
-    options?: {
-      table?: { row?: { cantSplit?: boolean } };
-      footer?: boolean;
-      pageNumber?: boolean;
-      font?: string;
-      fontSize?: number;
-      [key: string]: unknown;
-    }
-  ): Promise<Buffer>;
-
-  export default HTMLtoDOCX;
-}
+// Type declarations for docx library are provided by @types/docx or built-in
+// This file is kept for backward compatibility but is no longer needed
