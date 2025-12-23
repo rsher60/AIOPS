@@ -267,6 +267,60 @@ function ApplicationTrackerForm() {
         }
     };
 
+    // Export applications to CSV
+    const exportApplications = async () => {
+        try {
+            if (applications.length === 0) {
+                alert('No applications to export');
+                return;
+            }
+
+            const filename = `job_applications_${new Date().toISOString().split('T')[0]}.csv`;
+
+            // Create CSV header
+            const headers = ['Company Name', 'Position', 'Date Applied', 'Status', 'Notes'];
+
+            // Escape CSV values (handle commas, quotes, and newlines)
+            const escapeCSV = (value: string) => {
+                if (!value) return '';
+                // If value contains comma, quote, or newline, wrap in quotes and escape existing quotes
+                if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                    return `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            };
+
+            // Create CSV rows
+            const rows = applications.map(app => [
+                escapeCSV(app.company_name),
+                escapeCSV(app.position),
+                escapeCSV(app.application_date),
+                escapeCSV(app.status),
+                escapeCSV(app.notes || '')
+            ]);
+
+            // Combine header and rows
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting applications:', error);
+            alert('Error generating CSV file. Please try again.');
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl">
             <h1 className="text-4xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-8 text-center">
@@ -371,10 +425,21 @@ function ApplicationTrackerForm() {
                 {/* Right Panel - Table */}
                 <div className="lg:col-span-2">
                     <div className="bg-white dark:bg-[#0D2833] rounded-xl shadow-lg border border-[#D4F1F4] dark:border-[#1A4D5E] overflow-hidden">
-                        <div className="px-8 py-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        <div className="px-8 py-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E] flex justify-between items-center">
                             <h2 className="text-2xl font-semibold text-[#023047] dark:text-[#E0F4F5]">
                                 My Applications
                             </h2>
+                            {applications.length > 0 && (
+                                <button
+                                    onClick={exportApplications}
+                                    className="flex items-center gap-2 bg-[#52B788] hover:bg-[#40916C] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Export to CSV
+                                </button>
+                            )}
                         </div>
 
                         {loadingApplications ? (
