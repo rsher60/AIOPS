@@ -650,13 +650,20 @@ function ResumeGenerationForm() {
 
             {/* Footer Image */}
             <div className="mt-16 flex justify-center pb-8">
-                <Image
-                    src="/sbstack.jpg"
-                    alt="SBStack"
-                    width={800}
-                    height={200}
-                    className="rounded-lg shadow-lg"
-                />
+                <a
+                    href="https://substack.com/@riddhimansherlekar1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-transform hover:scale-105 duration-300"
+                >
+                    <Image
+                        src="/sbstack.jpg"
+                        alt="SBStack"
+                        width={800}
+                        height={200}
+                        className="rounded-lg shadow-lg cursor-pointer"
+                    />
+                </a>
             </div>
         </div>
     );

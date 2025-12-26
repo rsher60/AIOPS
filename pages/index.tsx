@@ -132,9 +132,10 @@ export default function Home() {
   const [typedText, setTypedText] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [activeFeature, setActiveFeature] = useState(0);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [expandedFeature, setExpandedFeature] = useState<number | null>(null);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   const fullText = "Transform Your Career with AI";
 
@@ -163,14 +164,6 @@ export default function Home() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % 3);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const stats = [
     { number: 100, label: "AI Generations", suffix: "+" },
     { number: 3, label: "AI Models", suffix: "" },
@@ -181,19 +174,22 @@ export default function Home() {
     {
       icon: "📋",
       title: "AI Resume Generation",
-      description: "Generate professional, ATS-optimized resumes tailored to specific roles using GPT-4, Grok, or Llama AI models with real-time streaming",
+      shortDescription: "Professional, ATS-optimized resumes in seconds",
+      fullDescription: "Generate professional, ATS-optimized resumes tailored to specific roles using GPT-4, Grok, or Llama AI models with real-time streaming",
       color: "from-[#2E86AB] to-[#4A9EBF]"
     },
     {
       icon: "🗺️",
       title: "Career Roadmap Planning",
-      description: "Get personalized month-by-month career transition plans with learning resources, project ideas, and interview preparation strategies",
+      shortDescription: "Personalized career transition plans with resources",
+      fullDescription: "Get personalized month-by-month career transition plans with learning resources, project ideas, and interview preparation strategies",
       color: "from-[#52B788] to-[#74C69D]"
     },
     {
       icon: "📊",
       title: "Application Tracking",
-      description: "Organize and track all your job applications with status updates, notes, and follow-up reminders in one centralized dashboard",
+      shortDescription: "Track applications with status updates and reminders",
+      fullDescription: "Organize and track all your job applications with status updates, notes, and follow-up reminders in one centralized dashboard",
       color: "from-[#06A77D] to-[#2E86AB]"
     },
   ];
@@ -280,6 +276,20 @@ export default function Home() {
       {/* Side Panel */}
       <SidePanel isOpen={sidePanelOpen} onClose={() => setSidePanelOpen(false)} />
 
+      {/* Sticky Sign-In Button */}
+      <SignedOut>
+        <div className="fixed top-20 right-6 z-50">
+          <SignInButton mode="modal">
+            <button className="bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-3 px-8 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all flex items-center gap-2">
+              Start Free
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          </SignInButton>
+        </div>
+      </SignedOut>
+
       <div className="container mx-auto px-4 py-12 relative z-10">
         {/* Navigation */}
         <nav className={`flex justify-between items-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
@@ -294,9 +304,14 @@ export default function Home() {
             <span>Menu</span>
           </button>
 
-          <h1 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] hover:scale-105 transition-transform cursor-pointer">
-            ResumeGenerator Pro
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] hover:scale-105 transition-transform cursor-pointer">
+              ResumeGenerator Pro
+            </h1>
+            <span className="bg-gradient-to-r from-[#FFB703] to-[#FB8500] text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+              BETA
+            </span>
+          </div>
         </nav>
 
         {/* Hero Section */}
@@ -307,12 +322,27 @@ export default function Home() {
               <span className="animate-pulse">|</span>
             </span>
           </h2>
-          <p className="text-2xl font-semibold text-[#023047] dark:text-[#E0F4F5] mb-6 animate-fade-in-up">
-            Generate Resumes for your next Job at Lightning Speed
+          <p className="text-xl text-[#5A8A9F] dark:text-[#7FA8B8] mb-8 max-w-2xl mx-auto animate-fade-in-up">
+            Create professional resumes, plan your career, track applications—all powered by AI
           </p>
-          <p className="text-xl text-[#5A8A9F] dark:text-[#7FA8B8] mb-12 max-w-2xl mx-auto animate-fade-in-up animation-delay-300">
-            AI-powered assistant that generates professional resumes, cover letters, and follow-up emails in seconds
-          </p>
+
+          {/* Visual Demo Section */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="relative bg-white/70 dark:bg-[#0D2833]/70 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-[#2E86AB] dark:border-[#4A9EBF] p-8 hover:shadow-3xl transition-all">
+              <div className="absolute -top-4 -right-4 bg-gradient-to-r from-[#52B788] to-[#74C69D] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                ✨ See it in action
+              </div>
+              <div className="aspect-video bg-gradient-to-br from-[#E8F4F5] to-[#D4F1F4] dark:from-[#0A1E29] dark:to-[#071821] rounded-xl flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E] overflow-hidden">
+                <Image
+                  src="/landingpage_visual.png"
+                  alt="Watch Resume Generation in Real-Time"
+                  width={1200}
+                  height={675}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Animated Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
@@ -345,10 +375,8 @@ export default function Home() {
                 }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-all duration-500 scale-95 group-hover:scale-100`}></div>
-                <div className={`relative bg-white dark:bg-[#0D2833] p-8 rounded-2xl shadow-lg border-2 transition-all duration-300 hover:scale-105 transform ${
-                  activeFeature === index
-                    ? 'border-[#2E86AB] dark:border-[#4A9EBF] shadow-2xl scale-105'
-                    : 'border-[#D4F1F4] dark:border-[#1A4D5E]'
+                <div className={`relative bg-white dark:bg-[#0D2833] p-8 rounded-2xl shadow-lg border-2 transition-all duration-300 ${
+                  expandedFeature === index ? 'border-[#2E86AB] dark:border-[#4A9EBF] shadow-2xl' : 'border-[#D4F1F4] dark:border-[#1A4D5E] hover:scale-105 transform'
                 }`}>
                   <div className="text-5xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
                     {feature.icon}
@@ -356,38 +384,68 @@ export default function Home() {
                   <h3 className="text-xl font-bold mb-3 text-[#023047] dark:text-[#E0F4F5]">
                     {feature.title}
                   </h3>
-                  <p className="text-[#5A8A9F] dark:text-[#7FA8B8]">
-                    {feature.description}
+                  <p className="text-[#5A8A9F] dark:text-[#7FA8B8] mb-3">
+                    {expandedFeature === index ? feature.fullDescription : feature.shortDescription}
                   </p>
+                  <button
+                    onClick={() => setExpandedFeature(expandedFeature === index ? null : index)}
+                    className="text-[#2E86AB] dark:text-[#4A9EBF] text-sm font-semibold hover:underline flex items-center gap-1 transition-all"
+                  >
+                    {expandedFeature === index ? 'Show less' : 'Learn more'}
+                    <svg
+                      className={`w-4 h-4 transition-transform duration-300 ${expandedFeature === index ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
                   <div className="mt-4 h-1 bg-gradient-to-r from-transparent via-[#2E86AB] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* CTA Buttons */}
+          {/* Quick Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="group relative bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-110 shadow-xl hover:shadow-2xl overflow-hidden">
-                  <span className="relative z-10">Start Free Trial</span>
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
-                </button>
-              </SignInButton>
-            </SignedOut>
-
-            <button className="group border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#2E86AB] dark:text-[#4A9EBF] font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 hover:bg-[#2E86AB] hover:text-white shadow-lg hover:shadow-xl">
-              Watch Demo
-            </button>
+            <SignedIn>
+              <div className="flex gap-4">
+                <Link href="/resume">
+                  <button className="bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-xl">
+                    Create Resume →
+                  </button>
+                </Link>
+                <Link href="/Roadmap">
+                  <button className="border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#2E86AB] dark:text-[#4A9EBF] font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 hover:bg-[#2E86AB] hover:text-white">
+                    Plan Career
+                  </button>
+                </Link>
+              </div>
+            </SignedIn>
           </div>
         </div>
 
         {/* How It Works Section */}
         <div className="max-w-6xl mx-auto mb-16">
-          <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent">
-            How It Works
-          </h2>
-          <div className="grid md:grid-cols-4 gap-6">
+          <button
+            onClick={() => setShowHowItWorks(!showHowItWorks)}
+            className="w-full flex items-center justify-center gap-3 bg-white/50 dark:bg-[#0D2833]/50 backdrop-blur-md p-6 rounded-2xl border-2 border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] dark:hover:border-[#4A9EBF] transition-all mb-6 group"
+          >
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent">
+              How It Works
+            </h2>
+            <svg
+              className={`w-6 h-6 text-[#2E86AB] dark:text-[#4A9EBF] transition-transform duration-300 ${showHowItWorks ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <div className={`grid md:grid-cols-4 gap-6 transition-all duration-500 pt-4 ${showHowItWorks ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
             {[
               { step: "1", title: "Sign Up", icon: "👤", desc: "Create your account with Clerk authentication" },
               { step: "2", title: "Choose Your Tool", icon: "🎯", desc: "Resume Generator, Career Roadmap, or Application Tracker" },
@@ -396,22 +454,22 @@ export default function Home() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="relative group"
+                className="relative group pt-4 pl-4"
                 style={{
                   animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`
                 }}
               >
-                <div className="bg-white/70 dark:bg-[#0D2833]/70 backdrop-blur-sm p-6 rounded-xl border border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
-                  <div className="text-6xl mb-4 text-center transform group-hover:scale-110 transition-transform">
+                <div className="bg-white/70 dark:bg-[#0D2833]/70 backdrop-blur-sm p-4 rounded-xl border border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
+                  <div className="text-4xl mb-3 text-center transform group-hover:scale-110 transition-transform">
                     {item.icon}
                   </div>
-                  <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-br from-[#2E86AB] to-[#4A9EBF] rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  <div className="absolute top-0 left-0 w-8 h-8 bg-gradient-to-br from-[#2E86AB] to-[#4A9EBF] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
                     {item.step}
                   </div>
-                  <h3 className="text-xl font-bold text-center mb-2 text-[#023047] dark:text-[#E0F4F5]">
+                  <h3 className="text-base font-bold text-center mb-2 text-[#023047] dark:text-[#E0F4F5]">
                     {item.title}
                   </h3>
-                  <p className="text-center text-[#5A8A9F] dark:text-[#7FA8B8] text-sm">
+                  <p className="text-center text-[#5A8A9F] dark:text-[#7FA8B8] text-xs">
                     {item.desc}
                   </p>
                 </div>
@@ -422,13 +480,20 @@ export default function Home() {
 
         {/* Footer Image */}
         <div className="mb-8 flex justify-center">
-          <Image
-            src="/sbstack.jpg"
-            alt="SBStack"
-            width={800}
-            height={200}
-            className="rounded-lg shadow-lg"
-          />
+          <a
+            href="https://substack.com/@riddhimansherlekar1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-transform hover:scale-105 duration-300"
+          >
+            <Image
+              src="/sbstack.jpg"
+              alt="SBStack"
+              width={800}
+              height={200}
+              className="rounded-lg shadow-lg cursor-pointer"
+            />
+          </a>
         </div>
 
         {/* Trust Indicators */}
