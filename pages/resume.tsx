@@ -85,6 +85,9 @@ function ResumeGenerationForm() {
     // Streaming state
     const [output, setOutput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [resumeContent, setResumeContent] = useState('');
+    const [aiChanges, setAiChanges] = useState('');
+    const [showAiChanges, setShowAiChanges] = useState(false);
 
     // Connection management
     const controllerRef = useRef<AbortController | null>(null);
@@ -181,6 +184,23 @@ function ResumeGenerationForm() {
                 onmessage(ev) {
                     console.log('Received message:', ev.data);
                     buffer += ev.data;
+
+                    // Check if delimiter exists in buffer
+                    const delimiterIndex = buffer.indexOf('---AI_ENHANCEMENTS_START---');
+
+                    if (delimiterIndex !== -1) {
+                        // Split into resume and AI changes
+                        const resume = buffer.substring(0, delimiterIndex).trim();
+                        const changes = buffer.substring(delimiterIndex + '---AI_ENHANCEMENTS_START---'.length).trim();
+
+                        setResumeContent(resume);
+                        setAiChanges(changes);
+                        setShowAiChanges(true);
+                    } else {
+                        // Delimiter not found yet, all content is resume
+                        setResumeContent(buffer);
+                    }
+
                     setOutput(buffer);
                 },
                 onerror(err) {
@@ -263,6 +283,9 @@ function ResumeGenerationForm() {
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setOutput('');
+        setResumeContent('');
+        setAiChanges('');
+        setShowAiChanges(false);
         setLoading(true);
 
         // Prepare form data
@@ -323,7 +346,7 @@ function ResumeGenerationForm() {
 
             // Parse markdown and create document sections
             const sections: InstanceType<typeof Paragraph>[] = [];
-            const lines = output.split('\n');
+            const lines = resumeContent.split('\n');
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
@@ -594,7 +617,8 @@ function ResumeGenerationForm() {
                 {/* Right Panel - Output */}
                 <div className="lg:min-h-screen">
                     {output ? (
-                        <section className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        <>
+                        <section className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 border border-[#D4F1F4] dark:border-[#1A4D5E]">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-semibold text-[#023047] dark:text-[#E0F4F5]">
                                     Generated Resume
@@ -634,12 +658,63 @@ function ResumeGenerationForm() {
                                         )
                                     }}
                                 >
-                                    {output}
+                                    {resumeContent}
                                 </ReactMarkdown>
                             </div>
                         </section>
+
+                        {/* AI Changes Expandable Panel */}
+                        {aiChanges && (
+                            <div className="mt-6 bg-white dark:bg-[#0D2833] rounded-xl shadow-lg border border-[#D4F1F4] dark:border-[#1A4D5E] overflow-hidden">
+                                <button
+                                    onClick={() => setShowAiChanges(!showAiChanges)}
+                                    className="w-full px-8 py-4 flex items-center justify-between hover:bg-[#F8FCFD] dark:hover:bg-[#0A1E29] transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-2xl">✨</span>
+                                        <h3 className="text-xl font-semibold text-[#023047] dark:text-[#E0F4F5]">
+                                            AI Enhancements
+                                        </h3>
+                                    </div>
+                                    <svg
+                                        className={`w-6 h-6 text-[#2E86AB] transform transition-transform ${
+                                            showAiChanges ? 'rotate-180' : ''
+                                        }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {showAiChanges && (
+                                    <div className="px-8 py-6 border-t border-[#D4F1F4] dark:border-[#1A4D5E]">
+                                        <div className="markdown-content prose prose-stone dark:prose-invert max-w-none">
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm, remarkBreaks]}
+                                                components={{
+                                                    p: ({ ...props }) => (
+                                                        <p className="break-words overflow-wrap-anywhere text-[#5A8A9F] dark:text-[#7FA8B8]" {...props} />
+                                                    ),
+                                                    ul: ({ ...props }) => (
+                                                        <ul className="space-y-2 list-disc list-inside" {...props} />
+                                                    ),
+                                                    li: ({ ...props }) => (
+                                                        <li className="text-[#023047] dark:text-[#E0F4F5]" {...props} />
+                                                    ),
+                                                }}
+                                            >
+                                                {aiChanges}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        </>
                     ) : (
-                        <div className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        <div className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 min-h-96 flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E]">
                             <p className="text-[#5A8A9F] dark:text-[#7FA8B8] text-center">
                                 Fill out the form and click &quot;Generate Resume&quot; to see your results here
                             </p>

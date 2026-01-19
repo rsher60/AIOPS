@@ -43,12 +43,25 @@ Generate a well-structured resume in **markdown format** with the following sect
 ### 7. Projects/Portfolio (if applicable)
 - Highlight 2-3 relevant projects with brief descriptions and outcomes
 
-### 8. Suggestions for Improvement
-Provide a separate section with:
-- Gaps or weaknesses identified in the current resume
-- Additional skills or certifications that would strengthen the application
-- Interview preparation tips specific to the target role
-- Recommended action items to improve candidacy
+### 8. AI Enhancements Summary
+IMPORTANT: This section MUST be separated from the resume content with a delimiter.
+After completing all resume sections above, add the following delimiter on its own line:
+
+---AI_ENHANCEMENTS_START---
+
+Then provide a concise summary explaining HOW you tailored the resume based on the user's inputs:
+- List 3-7 specific changes showing how you incorporated the target job title and additional notes
+- CLEARLY EXPLAIN the connection between user inputs and your changes
+- Format: "- [What you changed] based on [which user input]" or "- Tailored [section] to emphasize [aspect from additional notes]"
+- Examples:
+  * "- Rewrote professional summary to highlight cloud architecture experience mentioned in additional notes"
+  * "- Added 'team leadership' and 'agile methodologies' skills to match the Senior Developer role requirements"
+  * "- Restructured experience bullets to emphasize the Python projects mentioned in additional notes"
+  * "- Incorporated quantified metrics from additional notes (30% performance improvement, 5-person team lead)"
+  * "- Tailored education section to highlight relevant coursework based on target role in Data Science"
+- Focus on demonstrating HOW the additional information shaped the final resume
+- Show the AI's understanding and application of the user's specific context
+- Keep each point to 1-2 concise lines for clarity
 
 ## FORMATTING GUIDELINES
 - Use proper markdown syntax (# for headers, ** for bold, - for bullets)
