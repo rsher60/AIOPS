@@ -910,3 +910,124 @@ required changes to make sure that it works. I believe its because of the conver
   - Fade In/Out - Opacity animation
   - Slide In/Out - Position animation
   - Stagger - Sequential animation delays
+
+
+
+
+#### How to Implement to a new Route & changes to make in new Files 
+
+
+⏺ Message Rewriter Feature Implementation Summary
+
+  File 1: /prompts/message_rewriter_prompt.py
+
+  Status: Created new file
+
+  Content Added:
+  1. message_rewriter_system_prompt variable - 300+ line comprehensive prompt containing:
+    - 8 message types (referral, cold_outreach, follow_up, thank_you, networking, negotiation, offer_acceptance, general)
+    - 5 formality levels with tone guidelines (Casual → Very Formal)
+    - 4 recipient type considerations (recruiter, hiring_manager, employee, peer)
+    - 3 variation strategy (Concise, Balanced, Personable)
+    - Output format with ---VARIATION_SEPARATOR--- delimiter
+    - Message-type-specific guidelines for each of the 8 types
+    - Universal best practices
+
+  ---
+  File 2: /api/server.py
+
+  Changes Made:
+
+  1. Import added (line 20):
+  from saas.prompts.message_rewriter_prompt import message_rewriter_system_prompt
+  2. Request model added (lines 74-81):
+  class MessageRewriteRequest(BaseModel):
+      original_message: str
+      message_type: str  # referral, cold_outreach, follow_up, thank_you, networking, negotiation, offer_acceptance, general
+      formality_level: int  # 1-5
+      recipient_type: str  # recruiter, hiring_manager, employee, peer
+      additional_context: str
+      model: str
+  3. Endpoint function added (after line 434):
+  @app.post("/api/rewrite-message")
+  def rewrite_message(
+      request: MessageRewriteRequest,
+      creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+  ):
+    - Validates user authentication via Clerk JWT
+    - Maps formality levels to descriptive labels
+    - Maps message types to readable names
+    - Maps recipient types to readable names
+    - Constructs user prompt with all parameters
+    - Supports 3 AI models: GPT-4o-mini, Grok Beta, Llama 3.1 70B
+    - Streams response using Server-Sent Events (SSE)
+    - Returns StreamingResponse with text/event-stream media type
+
+  ---
+  File 3: /pages/MessageRewriter.tsx
+
+  Status: Created new file (530+ lines)
+
+  Components Implemented:
+
+  1. SidePanel Component - Navigation menu with links to all pages
+  2. MessageRewriterForm Component - Main form with:
+    - State variables:
+        - Form inputs: originalMessage, messageType, formalityLevel, recipientType, additionalContext, selectedModel
+      - Output states: variation1, variation2, variation3, loading
+    - Data structures:
+        - 8 message type cards with icons and descriptions
+      - 4 recipient type cards with icons
+      - 5 formality level labels with emojis
+    - Functions:
+        - connectWithFreshToken() - SSE connection with token refresh
+      - handleSubmit() - Form validation and submission
+      - copyToClipboard() - Copy variation to clipboard
+    - UI Sections:
+        - Left panel: Form with textarea, message type grid, formality slider, recipient selector, context textarea, model dropdown
+      - Right panel: 3 variation cards with copy buttons, or empty state
+    - Streaming logic: Parses buffer on ---VARIATION_SEPARATOR--- delimiter
+  3. MessageRewriter Component (default export) - Page wrapper with sticky header
+
+  ---
+  File 4: /pages/resume.tsx
+
+  Changes Made:
+  1. Added Message Rewriter link to SidePanel navigation (after ApplicationTracker link, before Home link) with purple gradient icon ✍️
+
+  ---
+  File 5: /pages/Roadmap.tsx
+
+  Changes Made:
+  1. Added Message Rewriter link to SidePanel navigation (after ApplicationTracker link, before Home link) with purple gradient icon ✍️
+
+  ---
+  File 6: /pages/ApplicationTracker.tsx
+
+  Changes Made:
+  1. Added Message Rewriter link to SidePanel navigation (after ApplicationTracker link, before Home link) with purple gradient icon ✍️
+
+  ---
+  File 7: /pages/index.tsx
+
+  Changes Made:
+  1. Added Message Rewriter link to SidePanel navigation (after ApplicationTracker link, before Home link) with purple gradient icon ✍️
+
+  ---
+  Technical Architecture
+
+  Backend Flow:
+  1. User submits form → Frontend calls /api/rewrite-message with JWT
+  2. Server validates token via Clerk
+  3. Server constructs prompt with user inputs + system prompt
+  4. Server calls selected AI model (OpenAI/xAI/Groq)
+  5. AI streams 3 variations separated by ---VARIATION_SEPARATOR---
+  6. Server streams response to client via SSE
+
+  Frontend Flow:
+  1. User fills form and clicks "Generate Variations"
+  2. connectWithFreshToken() initiates SSE connection
+  3. onmessage handler accumulates buffer and splits on delimiter
+  4. Sets variation1, variation2, variation3 as content arrives
+  5. Displays 3 separate cards with copy buttons
+  6. Handles token expiration with automatic reconnection

@@ -254,7 +254,7 @@ function MessageRewriterForm() {
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Original Message */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
                                         Your Message
                                     </label>
                                     <textarea
@@ -275,7 +275,7 @@ function MessageRewriterForm() {
 
                                 {/* Message Type Selection */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#023047] dark:text-[#E0F4F5] mb-3">
+                                    <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-3">
                                         Message Type
                                     </label>
                                     <div className="grid grid-cols-2 gap-3">
@@ -290,7 +290,6 @@ function MessageRewriterForm() {
                                                         : 'border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] hover:shadow-md'
                                                 }`}
                                             >
-                                                <div className="text-2xl mb-1">{type.icon}</div>
                                                 <div className="text-sm font-semibold text-[#023047] dark:text-[#E0F4F5]">{type.label}</div>
                                                 <div className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">{type.description}</div>
                                             </button>
@@ -300,7 +299,7 @@ function MessageRewriterForm() {
 
                                 {/* Formality Level Slider */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#023047] dark:text-[#E0F4F5] mb-3">
+                                    <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-3">
                                         Formality Level
                                     </label>
                                     <div className="space-y-3">
@@ -322,8 +321,7 @@ function MessageRewriterForm() {
                                                             : 'opacity-50'
                                                     } transition-all`}
                                                 >
-                                                    <div className="text-2xl">{item.emoji}</div>
-                                                    <div className="text-xs text-[#023047] dark:text-[#E0F4F5] mt-1">{item.label}</div>
+                                                    <div className="text-xs text-[#023047] dark:text-[#E0F4F5]">{item.label}</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -332,7 +330,7 @@ function MessageRewriterForm() {
 
                                 {/* Recipient Type */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#023047] dark:text-[#E0F4F5] mb-3">
+                                    <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-3">
                                         Recipient Type
                                     </label>
                                     <div className="grid grid-cols-2 gap-3">
@@ -347,7 +345,6 @@ function MessageRewriterForm() {
                                                         : 'border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] hover:shadow-md'
                                                 }`}
                                             >
-                                                <div className="text-3xl mb-2">{type.icon}</div>
                                                 <div className="text-sm font-semibold text-[#023047] dark:text-[#E0F4F5]">{type.label}</div>
                                             </button>
                                         ))}
@@ -356,7 +353,7 @@ function MessageRewriterForm() {
 
                                 {/* Additional Context */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
                                         Additional Context <span className="text-[#5A8A9F]">(Optional)</span>
                                     </label>
                                     <textarea
@@ -370,7 +367,7 @@ function MessageRewriterForm() {
 
                                 {/* Model Selection */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5] mb-2">
                                         AI Model
                                     </label>
                                     <select
@@ -388,11 +385,7 @@ function MessageRewriterForm() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className={`w-full py-4 rounded-xl font-semibold text-white text-lg transition-all ${
-                                        loading
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-[#2E86AB] to-[#06A77D] hover:shadow-2xl hover:scale-105'
-                                    }`}
+                                    className="w-full bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#e8956f] disabled:from-[#e8b59a] disabled:to-[#f0cdb0] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                                 >
                                     {loading ? 'Generating...' : 'Generate Variations'}
                                 </button>
@@ -467,7 +460,6 @@ function MessageRewriterForm() {
                         ) : (
                             <div className="bg-white dark:bg-[#0D2833] rounded-2xl shadow-2xl p-12 border border-[#D4F1F4] dark:border-[#1A4D5E] min-h-96 flex items-center justify-center">
                                 <div className="text-center">
-                                    <div className="text-6xl mb-4">✍️</div>
                                     <h3 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-2">
                                         Ready to Polish Your Message
                                     </h3>

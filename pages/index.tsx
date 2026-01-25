@@ -343,9 +343,14 @@ export default function Home() {
           {/* Visual Demo Section */}
           <div className="max-w-4xl mx-auto mb-12">
             <div className="relative bg-white/70 dark:bg-[#0D2833]/70 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-[#2E86AB] dark:border-[#4A9EBF] p-8 hover:shadow-3xl transition-all">
-              <div className="absolute -top-4 -right-4 bg-gradient-to-r from-[#52B788] to-[#74C69D] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+              <a
+                href="https://resumegenapp.s3.amazonaws.com/resumegen-userguide.mp4"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute -top-4 -right-4 bg-gradient-to-r from-[#52B788] to-[#74C69D] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+              >
                 ✨ See it in action
-              </div>
+              </a>
               <div className="aspect-video bg-gradient-to-br from-[#E8F4F5] to-[#D4F1F4] dark:from-[#0A1E29] dark:to-[#071821] rounded-xl flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E] overflow-hidden">
                 <Image
                   src="/landingpage_visual.png"
