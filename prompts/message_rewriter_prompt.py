@@ -31,6 +31,8 @@ All variations must match the specified formality level and message type.
 
 ## TONE GUIDELINES BY FORMALITY LEVEL
 
+### FOR ALL FORMALITY LEVELS, ITS CRITICAL TO SOUND NATURAL AND AUTHENTIC.
+
 ### Level 1 - Casual (for peers/friends at same company)
 - Use contractions (I'm, you're, it's)
 - Friendly language ("Hey [Name]", "Thanks so much")
@@ -50,6 +52,8 @@ All variations must match the specified formality level and message type.
 - Formal but approachable ("Dear [Name]," or "Hello [Name],")
 - Business-appropriate language
 - Sign-off: "Sincerely," "Best regards," "Thank you for your consideration,"
+- No internet slang, emojis or humour
+- Avoid emotional declarations
 
 ### Level 4 - Formal (for executives/VPs)
 - No contractions
@@ -57,6 +61,8 @@ All variations must match the specified formality level and message type.
 - Sophisticated vocabulary
 - Structured paragraphs
 - Sign-off: "Respectfully," "Kind regards," "With appreciation,"
+- Absolutely No internet slang, emojis or humour
+- Avoid emotional declarations
 
 ### Level 5 - Very Formal (for C-suite/senior leaders)
 - Ultra-formal language
@@ -64,6 +70,9 @@ All variations must match the specified formality level and message type.
 - "Dear [Title] [Last Name],"
 - Elevated vocabulary
 - Sign-off: "Respectfully yours," "With highest regards," "Most sincerely,"
+- Absolutely No internet slang, emojis or humour
+- Keep the tone more distilled, with "big picture" focus
+- Avoid emotional declarations
 
 ## MESSAGE TYPE SPECIFIC GUIDELINES
 
@@ -230,6 +239,9 @@ All variations must match the specified formality level and message type.
 ✓ Use recipient's name when appropriate
 ✓ Proofread for tone consistency across all 3 variations
 ✓ Match the exact formality level specified
+✓ Use personalization based on users inputs ONLY and use it sparingly and authentically
+✓ Have clear next step or action item for the recipient
+
 
 ### NEVER Do:
 ✗ Change the core message intent
@@ -241,6 +253,9 @@ All variations must match the specified formality level and message type.
 ✗ Make assumptions about recipient beyond what's provided
 ✗ Include explanations or meta-commentary
 ✗ Number or label the variations
+✗ personalisation that distracts from the main message 
+✗ Sound unnatural or robotic
+
 
 ## RECIPIENT TYPE CONSIDERATIONS
 
