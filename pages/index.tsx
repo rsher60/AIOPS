@@ -101,6 +101,20 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
               </Link>
 
               <Link
+                href="/MessageRewriter"
+                className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group"
+                onClick={onClose}
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-[#9B59B6] to-[#BB6BD9] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  ✍️
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Message Rewriter</h3>
+                  <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Polish professional messages</p>
+                </div>
+              </Link>
+
+              <Link
                 href="/"
                 className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group"
                 onClick={onClose}

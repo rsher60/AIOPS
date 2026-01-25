@@ -17,6 +17,7 @@ from PyPDF2 import PdfReader
 import boto3
 from botocore.exceptions import ClientError
 from saas.prompts.resume_generator_prompt import system_prompt
+from saas.prompts.message_rewriter_prompt import message_rewriter_system_prompt
 load_dotenv()
 app = FastAPI()
 
@@ -69,6 +70,15 @@ class ApplicationRequest(BaseModel):
     application_date: str
     status: str
     notes: str
+
+
+class MessageRewriteRequest(BaseModel):
+    original_message: str
+    message_type: str  # referral, cold_outreach, follow_up, thank_you, networking, negotiation, offer_acceptance, general
+    formality_level: int  # 1-5
+    recipient_type: str  # recruiter, hiring_manager, employee, peer
+    additional_context: str
+    model: str
 
 
 #Function to parse PDF content
@@ -423,6 +433,142 @@ def roadmap_consultation_summary(
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
+
+# Message Rewriter API Endpoint
+
+@app.post("/api/rewrite-message")
+def rewrite_message(
+    request: MessageRewriteRequest,
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    """Rewrite a message for professional communication with 3 variations"""
+    user_id = creds.decoded["sub"]
+
+    # Build user prompt
+    formality_labels = {
+        1: "Casual (for peers/friends)",
+        2: "Friendly Professional (for recruiters you've talked to)",
+        3: "Professional (for hiring managers)",
+        4: "Formal (for executives/VPs)",
+        5: "Very Formal (for C-suite)"
+    }
+
+    message_type_labels = {
+        "referral": "Referral Request",
+        "cold_outreach": "Cold Outreach",
+        "follow_up": "Follow-Up Message",
+        "thank_you": "Thank You Note",
+        "networking": "Networking Message",
+        "negotiation": "Salary/Offer Negotiation",
+        "offer_acceptance": "Offer Acceptance",
+        "general": "General Professional Rewrite"
+    }
+
+    recipient_labels = {
+        "recruiter": "Recruiter",
+        "hiring_manager": "Hiring Manager",
+        "employee": "Company Employee",
+        "peer": "Peer/Professional Connection"
+    }
+
+    user_prompt = f"""Please rewrite the following message:
+
+MESSAGE TYPE: {message_type_labels.get(request.message_type, request.message_type)}
+FORMALITY LEVEL: {request.formality_level} - {formality_labels.get(request.formality_level, 'Professional')}
+RECIPIENT: {recipient_labels.get(request.recipient_type, request.recipient_type)}
+
+ORIGINAL MESSAGE:
+{request.original_message}
+"""
+
+    if request.additional_context:
+        user_prompt += f"\n\nADDITIONAL CONTEXT:\n{request.additional_context}"
+
+    user_prompt += "\n\nGenerate 3 distinct variations of this message following all guidelines. Remember to separate each variation with ---VARIATION_SEPARATOR---"
+
+    prompt = [
+        {"role": "system", "content": message_rewriter_system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    # Select AI model
+    try:
+        if request.model == "gpt-4o-mini":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key or api_key.startswith("your_"):
+                raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+
+            client = OpenAI(api_key=api_key)
+            stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=prompt,
+                stream=True,
+            )
+        elif request.model == "grok-beta":
+            api_key = os.getenv("XAI_API_KEY")
+            if not api_key or api_key.startswith("your_"):
+                raise HTTPException(status_code=400, detail="xAI API key not configured")
+
+            client = OpenAI(
+                base_url="https://api.groq.com/openai/v1",
+                api_key=os.getenv("XAI_API_KEY"),
+            )
+
+            stream = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=prompt,
+                stream=True,
+            )
+        elif request.model == "llama-70b":
+            api_key = os.getenv("HUGGINGFACE_API_KEY")
+            if not api_key or api_key.startswith("your_"):
+                raise HTTPException(status_code=400, detail="Hugging Face API key not configured")
+
+            hf_client = OpenAI(
+                base_url="https://router.huggingface.co/v1",
+                api_key=api_key,
+            )
+
+            stream = hf_client.chat.completions.create(
+                model="meta-llama/Llama-3.1-70B-Instruct",
+                messages=prompt,
+                stream=True,
+                max_tokens=2048,
+            )
+        else:
+            # Default to GPT
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key or api_key.startswith("your_"):
+                raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+
+            client = OpenAI(api_key=api_key)
+            stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=prompt,
+                stream=True,
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        if "Incorrect API key" in error_msg or "invalid" in error_msg.lower():
+            raise HTTPException(status_code=400, detail=f"Invalid API key for {request.model}")
+        elif "authentication" in error_msg.lower():
+            raise HTTPException(status_code=401, detail=f"Authentication failed for {request.model}")
+        else:
+            raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
+
+    def event_stream():
+        for chunk in stream:
+            text = chunk.choices[0].delta.content
+            if text:
+                lines = text.split("\n")
+                for line in lines[:-1]:
+                    yield f"data: {line}\n\n"
+                    yield "data:  \n"
+                yield f"data: {lines[-1]}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 # Application Tracking Endpoints

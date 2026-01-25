@@ -702,3 +702,211 @@ required changes to make sure that it works. I believe its because of the conver
   ⎿  ⧉ Selected 1 lines from api/server.py in Visual Studio Code
 
 ⏺ The 405 error is happening because your app is using next export for static deployment, which disables API routes. I saw this warning in the build output. I'll fix this by implementing client-side DOCX generation instead of using a server API.
+
+
+### UI Terminology 
+
+ UI Component Terminology Guide
+
+  Here's a comprehensive breakdown of UI components across your application files:
+
+  ---
+  index.tsx (Landing Page)
+
+  Layout Components
+
+  - Container - <div className="container mx-auto"> - Main content wrapper with centered max-width
+  - Hero Section - Lines 318-427 - Large prominent section at top with main heading and CTA
+  - Grid Layout - grid md:grid-cols-3 - Multi-column responsive layout system
+
+  Navigation Components
+
+  - Navigation Bar / Navbar - Lines 294-315 - Top horizontal navigation
+  - Hamburger Menu Button - Lines 297-305 - Three-line icon button that opens side panel
+  - Side Panel / Drawer / Sidebar - Lines 10-129 - Slide-out navigation menu from left
+  - Overlay / Backdrop - Lines 14-19 - Semi-transparent black background behind modal/panel
+  - Navigation Links - Lines 61-115 - Clickable links within navigation menu
+
+  Interactive Components
+
+  - Button (Primary CTA) - Lines 414-418 "Create Resume" - Primary call-to-action button
+  - Button (Secondary/Outline) - Lines 419-423 "Plan Career" - Outlined button variant
+  - Sticky Button - Lines 280-290 "Start Free" - Fixed position button
+  - Accordion / Collapsible Section - Lines 431-479 "How It Works" - Expandable/collapsible content
+  - Expandable Cards - Lines 369-408 - Feature cards that expand on click
+
+  Content Components
+
+  - Badge - Lines 311-313 "BETA" - Small label/tag
+  - Stat Cards / Metric Cards - Lines 349-365 - Cards displaying numerical statistics
+  - Feature Cards - Lines 369-408 - Cards highlighting product features
+  - Step Cards / Process Cards - Lines 454-477 - Sequential numbered instruction cards
+  - Trust Indicators / Trust Badges - Lines 500-517 - Security/compliance badges
+
+  Visual Elements
+
+  - Animated Background Shapes / Blobs - Lines 226-250 - Decorative floating gradient circles
+  - Floating Particles - Lines 252-264 - Small animated dots
+  - Cursor Glow / Interactive Cursor - Lines 267-274 - Glow effect following mouse
+  - Divider / Separator - Lines 506, 511 - Vertical line separating elements
+
+  Media Components
+
+  - Image Card - Lines 330-344 - Card containing product demo image
+  - Footer Image / Banner Image - Lines 482-497 - Promotional image link
+
+  Typography Components
+
+  - Heading (H1) - Line 308 "ResumeGenerator Pro"
+  - Heading (H2) - Line 319 with typing animation
+  - Subheading / Tagline - Lines 325-327 - Descriptive text under main heading
+
+  ---
+  ApplicationTracker.tsx
+
+  Layout Components
+
+  - Container - Line 325 - Main content wrapper
+  - Two-Column Grid / Split Layout - Line 330 - Form on left, table on right
+  - Sticky Sidebar - Line 333 - Left panel that stays fixed while scrolling
+
+  Form Components
+
+  - Form - Lines 333-422 - Complete input form
+  - Form Group / Field Group - Lines 338-351 - Label + input combination
+  - Text Input / Input Field - Lines 342-350 - Single-line text entry
+  - Date Picker / Calendar Input - Lines 372-380 - Date selection widget
+  - Dropdown / Select Menu - Lines 387-398 - Selection from predefined options
+  - Textarea / Multi-line Input - Lines 405-412 - Multi-line text entry
+  - Submit Button - Lines 415-421 - Form submission button
+  - Input Label - Lines 339-341 - Descriptive text for inputs
+
+  Data Display Components
+
+  - Table - Lines 455-525 - Structured data in rows/columns
+  - Table Header / thead - Lines 456-476 - Column headers
+  - Table Body / tbody - Lines 478-524 - Data rows
+  - Table Row / tr - Lines 480-522 - Single row of data
+  - Table Cell / td - Lines 481-521 - Individual data cell
+  - Status Badge / Pill - Lines 497-499 - Colored label showing status
+  - Empty State - Lines 450-452 - Message when no data exists
+  - Loading State - Lines 446-448 - Message during data fetch
+
+  Modal Components
+
+  - Modal / Dialog - Lines 533-624 - Popup overlay window
+  - Modal Backdrop - Line 534 - Dark transparent background
+  - Modal Content / Modal Body - Lines 535-623 - Main modal container
+  - Modal Header - Lines 536-538 - Modal title area
+  - Modal Footer / Action Bar - Lines 603-620 - Bottom button area
+
+  Action Components
+
+  - Action Buttons - Lines 508-520 - Edit/Delete buttons
+  - Icon Button - Lines 654-662 - Button with hamburger icon
+  - Export Button - Lines 433-441 - CSV download button
+
+  File Upload Components
+
+  - File Upload Zone - ApplicationTracker doesn't have this, but resume.tsx does
+
+  ---
+  resume.tsx (Resume Generator)
+
+  Layout Components
+
+  - Container - Line 446 - Main wrapper
+  - Split Panel Layout / Two-Panel Layout - Line 451 - Form and output panels
+  - Left Panel / Form Panel - Lines 453-615 - Input form side
+  - Right Panel / Output Panel - Lines 617-723 - Results display side
+  - Sticky Panel - Line 453 - Panel that stays in viewport
+
+  Form Components
+
+  - Multi-step Form - Lines 454-614 - Complex form with multiple sections
+  - File Upload Dropzone / Drag-and-drop Zone - Lines 537-591 - Drag-drop file area
+  - Range Slider / Slider Input - N/A in resume.tsx (in Roadmap.tsx though)
+  - File Preview Card - Lines 555-572 - Shows uploaded file details
+
+  Display Components
+
+  - Output Section / Results Panel - Lines 620-660 - AI-generated content area
+  - Markdown Viewer / Content Area - Lines 634-659 - Rendered markdown content
+  - Expandable Panel / Accordion Panel - Lines 663-714 - AI Enhancements collapsible section
+  - Download Button - Lines 626-635 - Action button for export
+
+  Status Components
+
+  - Loading State / Spinner State - When loading is true
+  - Empty State / Placeholder - Lines 717-720 - Before content generation
+
+  ---
+  Roadmap.tsx
+
+  Form Components (unique to Roadmap)
+
+  - Range Slider / Slider Control - Lines 457-473 - Months selection with min/max labels
+  - Slider Labels - Lines 470-473 - Min/max value display under slider
+
+  Similar components to resume.tsx
+
+  - All other components mirror resume.tsx structure
+
+  ---
+  Common Component Types Across All Files
+
+  Universal Components
+
+  - SidePanel Component - Reusable navigation drawer in all pages
+  - User Profile Section - Lines 24-30 (in SidePanel) - User account area
+  - Navigation Menu / Nav Menu - Lines 32-61 (in SidePanel) - List of navigation links
+  - Menu Item / Nav Item - Lines 33-60 - Individual clickable navigation option
+  - Footer - Lines 119-124 (in SidePanel), Lines 626-642 (in pages) - Bottom section
+
+  Button Variations
+
+  - Primary Button - Solid gradient background
+  - Secondary Button - Outlined border style
+  - Ghost Button - Minimal style, usually text only
+  - Icon Button - Button with icon, minimal/no text
+  - Disabled Button - Non-clickable state
+  - Loading Button - Shows loading text/spinner
+
+  Card Variations
+
+  - Basic Card - Simple bordered container
+  - Elevated Card / Shadow Card - Card with drop shadow
+  - Interactive Card - Hover effects, clickable
+  - Stat Card - Displays metrics/numbers
+  - Feature Card - Product feature showcase
+  - Data Card - Contains structured information
+
+  ---
+  General UI Terminology
+
+  Layout Terms
+
+  - Viewport - Visible area of the screen
+  - Container - Content wrapper with max-width
+  - Section - Distinct content area
+  - Panel - Distinct bordered/separated area
+  - Grid - Multi-column layout
+  - Flexbox - Flexible row/column layout
+  - Responsive Breakpoints - sm:, md:, lg: prefixes
+
+  State Terms
+
+  - Hover State - Appearance on mouse over
+  - Active State - Appearance when clicked
+  - Focus State - Appearance when selected via keyboard
+  - Disabled State - Non-interactive appearance
+  - Loading State - Appearance during data fetch
+  - Empty State - Appearance when no data
+
+  Animation Terms
+
+  - Transition - Smooth change between states
+  - Transform - Scale, rotate, translate effects
+  - Fade In/Out - Opacity animation
+  - Slide In/Out - Position animation
+  - Stagger - Sequential animation delays

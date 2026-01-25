@@ -55,6 +55,13 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                                 <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Track your applications</p>
                             </div>
                         </Link>
+                        <Link href="/MessageRewriter" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#9B59B6] to-[#BB6BD9] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">✍️</div>
+                            <div>
+                                <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Message Rewriter</h3>
+                                <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Polish professional messages</p>
+                            </div>
+                        </Link>
                         <Link href="/" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
                             <div className="w-12 h-12 bg-gradient-to-br from-[#FFB703] to-[#FB8500] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🏠</div>
                             <div>
@@ -444,10 +451,6 @@ function ResumeGenerationForm() {
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl">
-            <h1 className="text-4xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-8 text-center">
-                Resume Application
-            </h1>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Panel - Form */}
                 <div className="lg:sticky lg:top-8 h-fit">
@@ -748,20 +751,34 @@ export default function Product() {
     const [sidePanelOpen, setSidePanelOpen] = useState(false);
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821]">
+        <>
             <SidePanel isOpen={sidePanelOpen} onClose={() => setSidePanelOpen(false)} />
 
-            <button
-                onClick={() => setSidePanelOpen(true)}
-                className="fixed top-4 left-4 z-50 flex items-center gap-2 bg-white dark:bg-[#0D2833] border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-xl hover:scale-105 transition-all"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                <span>Menu</span>
-            </button>
+            <div className="min-h-screen bg-gradient-to-br from-[#F0F8FA] to-[#E8F4F5] dark:from-[#0A1E29] dark:to-[#071821]">
+                {/* Header */}
+                <header className="bg-white/80 dark:bg-[#0D2833]/80 backdrop-blur-md shadow-lg border-b border-[#D4F1F4] dark:border-[#1A4D5E] sticky top-0 z-50">
+                    <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                        <button
+                            onClick={() => setSidePanelOpen(true)}
+                            className="p-2 hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] rounded-lg transition-all"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#023047] dark:text-[#E0F4F5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
 
-            <ResumeGenerationForm />
-        </main>
+                        <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#06A77D] bg-clip-text text-transparent">
+                            Resume Application
+                        </Link>
+
+                        <SignedIn>
+                            <UserButton />
+                        </SignedIn>
+                    </div>
+                </header>
+
+                <ResumeGenerationForm />
+            </div>
+        </>
     );
 }
