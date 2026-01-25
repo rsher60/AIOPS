@@ -280,19 +280,35 @@ function MessageRewriterForm() {
                                     </label>
                                     <div className="grid grid-cols-2 gap-3">
                                         {messageTypes.map((type) => (
-                                            <button
-                                                key={type.id}
-                                                type="button"
-                                                onClick={() => setMessageType(type.id)}
-                                                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                                                    messageType === type.id
-                                                        ? 'border-[#2E86AB] bg-[#E8F4F5] dark:bg-[#0A1E29] shadow-lg'
-                                                        : 'border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] hover:shadow-md'
-                                                }`}
-                                            >
-                                                <div className="text-sm font-semibold text-[#023047] dark:text-[#E0F4F5]">{type.label}</div>
-                                                <div className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">{type.description}</div>
-                                            </button>
+                                            <div key={type.id} className="relative group">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMessageType(type.id)}
+                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                                        messageType === type.id
+                                                            ? 'border-[#2E86AB] bg-[#E8F4F5] dark:bg-[#0A1E29] shadow-lg'
+                                                            : 'border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] hover:shadow-md'
+                                                    }`}
+                                                >
+                                                    <div className="text-sm font-semibold text-[#023047] dark:text-[#E0F4F5]">{type.label}</div>
+                                                    <div className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">{type.description}</div>
+                                                </button>
+                                                {type.id === 'negotiation' && (
+                                                    <a
+                                                        href="https://www.levels.fyi/?tab=levels"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-y-0 translate-y-1"
+                                                    >
+                                                        <div className="bg-gradient-to-r from-[#2E86AB] to-[#06A77D] text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg hover:shadow-xl whitespace-nowrap flex items-center gap-1">
+                                                            <span>Check levels.fyi</span>
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        </div>
+                                                    </a>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -359,7 +375,7 @@ function MessageRewriterForm() {
                                     <textarea
                                         value={additionalContext}
                                         onChange={(e) => setAdditionalContext(e.target.value)}
-                                        placeholder="Any specific details to include..."
+                                        placeholder="Include information like the recipient's name, company, or specific points to mention which would help your message stand out."
                                         className="w-full px-4 py-3 border-2 border-[#D4F1F4] dark:border-[#1A4D5E] rounded-xl bg-white dark:bg-[#071821] text-[#023047] dark:text-[#E0F4F5] focus:outline-none focus:ring-2 focus:ring-[#2E86AB] transition-all resize-none"
                                         rows={3}
                                     />
