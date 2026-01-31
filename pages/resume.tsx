@@ -86,7 +86,9 @@ function ResumeGenerationForm() {
     const [roleAppliedFor, setRoleAppliedFor] = useState('');
     const [YourPhoneNumber, setYourPhoneNumber] = useState('');
     const [resumeFile, setResumeFile] = useState<File | null>(null);
+    const [linkedinFile, setLinkedinFile] = useState<File | null>(null);
     const [dragActive, setDragActive] = useState(false);
+    const [linkedinDragActive, setLinkedinDragActive] = useState(false);
     const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Streaming state
@@ -100,6 +102,7 @@ function ResumeGenerationForm() {
     const controllerRef = useRef<AbortController | null>(null);
     const isConnectingRef = useRef(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const linkedinFileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Handle file drag events
     const handleDrag = (e: React.DragEvent) => {
@@ -148,6 +151,53 @@ function ResumeGenerationForm() {
         }
     };
 
+    // Handle LinkedIn file drag events
+    const handleLinkedinDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setLinkedinDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setLinkedinDragActive(false);
+        }
+    };
+
+    // Handle LinkedIn file drop
+    const handleLinkedinDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setLinkedinDragActive(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            if (file.type === 'application/pdf') {
+                setLinkedinFile(file);
+            } else {
+                alert('Please upload a PDF file');
+            }
+        }
+    };
+
+    // Handle LinkedIn file input change
+    const handleLinkedinFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.type === 'application/pdf') {
+                setLinkedinFile(file);
+            } else {
+                alert('Please upload a PDF file');
+            }
+        }
+    };
+
+    // Remove uploaded LinkedIn file
+    const removeLinkedinFile = () => {
+        setLinkedinFile(null);
+        if (linkedinFileInputRef.current) {
+            linkedinFileInputRef.current.value = '';
+        }
+    };
+
     const connectWithFreshToken = async (formData: {
         applicant_name: string;
         application_date: string;
@@ -155,6 +205,8 @@ function ResumeGenerationForm() {
         phone_number: string;
         resume_pdf?: string;
         resume_filename?: string;
+        linkedin_profile_pdf?: string;
+        linkedin_profile_filename?: string;
         additional_notes: string;
         model: string;
     }) => {
@@ -303,6 +355,8 @@ function ResumeGenerationForm() {
             phone_number: string;
             resume_pdf?: string;
             resume_filename?: string;
+            linkedin_profile_pdf?: string;
+            linkedin_profile_filename?: string;
             additional_notes: string;
             model: string;
         } = {
@@ -323,6 +377,20 @@ function ResumeGenerationForm() {
             } catch (error) {
                 console.error('Error reading PDF file:', error);
                 setOutput('Error reading PDF file. Please try again.');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // Add LinkedIn PDF if uploaded
+        if (linkedinFile) {
+            try {
+                const base64 = await fileToBase64(linkedinFile);
+                formData.linkedin_profile_pdf = base64;
+                formData.linkedin_profile_filename = linkedinFile.name;
+            } catch (error) {
+                console.error('Error reading LinkedIn PDF file:', error);
+                setOutput('Error reading LinkedIn PDF file. Please try again.');
                 setLoading(false);
                 return;
             }
@@ -587,6 +655,72 @@ function ResumeGenerationForm() {
                                         </p>
                                         <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
                                             PDF files only
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Upload LinkedIn Profile (PDF) - Optional
+                            </label>
+                            <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mb-2">
+                                Export your LinkedIn profile as PDF for additional context
+                            </p>
+                            <div
+                                onDragEnter={handleLinkedinDrag}
+                                onDragLeave={handleLinkedinDrag}
+                                onDragOver={handleLinkedinDrag}
+                                onDrop={handleLinkedinDrop}
+                                className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
+                                    linkedinDragActive
+                                        ? 'border-[#0077B5] bg-[#E8F4F9] dark:bg-[#023047]'
+                                        : 'border-[#D4F1F4] dark:border-[#1A4D5E] bg-[#F8FCFD] dark:bg-[#0A1E29]'
+                                }`}
+                            >
+                                <input
+                                    ref={linkedinFileInputRef}
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={handleLinkedinFileChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                {linkedinFile ? (
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-3">
+                                            <svg className="w-8 h-8 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                            </svg>
+                                            <div>
+                                                <p className="text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                                    {linkedinFile.name}
+                                                </p>
+                                                <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
+                                                    {(linkedinFile.size / 1024).toFixed(2)} KB
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={removeLinkedinFile}
+                                            className="text-[#0077B5] hover:text-[#005582] transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center">
+                                        <svg className="mx-auto h-12 w-12 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                        </svg>
+                                        <p className="mt-2 text-sm text-[#023047] dark:text-[#E0F4F5]">
+                                            <span className="font-semibold">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
+                                            LinkedIn PDF export (optional)
                                         </p>
                                     </div>
                                 )}

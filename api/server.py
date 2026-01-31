@@ -49,6 +49,7 @@ class ResumeRequest(BaseModel):
     role_applied_for: str
     phone_number: str
     resume_pdf: str | None = None
+    linkedin_profile_pdf: str | None = None
     resume_filename: str | None = None
     additional_notes: str
     model: str
@@ -59,6 +60,7 @@ class RoadmapRequest(BaseModel):
     time_to_prep_in_months: int
     role_applied_for: str
     resume_pdf: str | None = None
+    linkedin_profile_pdf: str | None = None
     resume_filename: str | None = None
     additional_notes: str
     model: str
@@ -142,6 +144,20 @@ def user_prompt_for(request: ResumeRequest) -> str:
             "Please use the above existing resume as a reference and improve it for the role applied for."
         ])
 
+    if request.linkedin_profile_pdf:
+        linkedin_pdf_content = parse_pdf_content(request.linkedin_profile_pdf)
+        prompt_parts.extend([
+            "",
+            "=== LINKEDIN PROFILE CONTENT ===",
+            "(This is the user's LinkedIn PDF export - use this as the PRIMARY source for contact info and to enrich resume content)",
+            "",
+            linkedin_pdf_content,
+            "",
+            "=== END OF LINKEDIN PROFILE ===",
+            "",
+            "IMPORTANT: When generating the resume, prioritize LinkedIn data for contact information (email, phone, location). Merge skills, experience details, and certifications from both sources. Extract valuable content like headline, recommendations, and endorsements."
+        ])
+
     # Add additional notes
     prompt_parts.extend([
         "",
@@ -179,6 +195,21 @@ def user_prompt_for_roadmap(request: RoadmapRequest) -> str:
             "=== END OF RESUME ===",
             "",
             "Please analyze the above resume to understand the candidate's current skills and experience."
+        ])
+
+    # Add LinkedIn profile content if PDF was uploaded
+    if request.linkedin_profile_pdf:
+        linkedin_pdf_content = parse_pdf_content(request.linkedin_profile_pdf)
+        prompt_parts.extend([
+            "",
+            "=== LINKEDIN PROFILE CONTENT ===",
+            "(This provides additional context about the candidate's professional network, endorsements, and career history)",
+            "",
+            linkedin_pdf_content,
+            "",
+            "=== END OF LINKEDIN PROFILE ===",
+            "",
+            "Use the LinkedIn profile to understand: skills with endorsements (indicating validated strengths), career progression, professional network/connections in target industry, recommendations from colleagues, and any relevant certifications or courses."
         ])
 
     # Add additional notes
