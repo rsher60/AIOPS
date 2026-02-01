@@ -1,6 +1,7 @@
 import { useState, FormEvent, useRef, useEffect } from 'react';
 import { useAuth, SignedIn } from '@clerk/nextjs';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -83,6 +84,7 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
 
 function CompanyResearchForm() {
     const { getToken } = useAuth();
+    const router = useRouter();
 
     // Form state
     const [companyName, setCompanyName] = useState('');
@@ -97,6 +99,19 @@ function CompanyResearchForm() {
     // Connection management
     const controllerRef = useRef<AbortController | null>(null);
     const isConnectingRef = useRef(false);
+
+    // Pre-fill form from URL query parameters (from Application Tracker)
+    useEffect(() => {
+        if (router.isReady) {
+            const { company, role } = router.query;
+            if (company && typeof company === 'string') {
+                setCompanyName(company);
+            }
+            if (role && typeof role === 'string') {
+                setTargetRole(role);
+            }
+        }
+    }, [router.isReady, router.query]);
 
     const connectWithFreshToken = async (formData: {
         company_name: string;

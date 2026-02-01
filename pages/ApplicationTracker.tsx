@@ -1,6 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useAuth, SignInButton, SignedIn, SignedOut } from '@clerk/nextjs';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { UserButton } from '@clerk/nextjs';
@@ -91,6 +92,7 @@ interface Application {
 
 function ApplicationTrackerForm() {
     const { getToken } = useAuth();
+    const router = useRouter();
 
     // Form state
     const [companyName, setCompanyName] = useState('');
@@ -107,6 +109,10 @@ function ApplicationTrackerForm() {
     // Edit modal state
     const [editingApp, setEditingApp] = useState<Application | null>(null);
     const [showEditModal, setShowEditModal] = useState(false);
+
+    // Research prompt state
+    const [showResearchPrompt, setShowResearchPrompt] = useState(false);
+    const [newlyAddedApp, setNewlyAddedApp] = useState<{ company: string; position: string } | null>(null);
 
     // Fetch applications on component mount
     useEffect(() => {
@@ -172,6 +178,10 @@ function ApplicationTrackerForm() {
             });
 
             if (response.ok) {
+                // Store the company and position for research prompt before clearing
+                const addedCompany = companyName;
+                const addedPosition = position;
+
                 // Clear form
                 setCompanyName('');
                 setPosition('');
@@ -181,7 +191,10 @@ function ApplicationTrackerForm() {
 
                 // Refresh applications list
                 await fetchApplications();
-                alert('Application added successfully!');
+
+                // Show research prompt instead of alert
+                setNewlyAddedApp({ company: addedCompany, position: addedPosition });
+                setShowResearchPrompt(true);
             } else {
                 const errorData = await response.json();
                 alert(`Failed to add application: ${errorData.detail || 'Unknown error'}`);
@@ -333,6 +346,24 @@ function ApplicationTrackerForm() {
             console.error('Error exporting applications:', error);
             alert('Error generating CSV file. Please try again.');
         }
+    };
+
+    // Handle research navigation
+    const handleResearchCompany = () => {
+        if (newlyAddedApp) {
+            const params = new URLSearchParams({
+                company: newlyAddedApp.company,
+                role: newlyAddedApp.position,
+            });
+            router.push(`/CompanyResearch?${params.toString()}`);
+        }
+        setShowResearchPrompt(false);
+        setNewlyAddedApp(null);
+    };
+
+    const handleSkipResearch = () => {
+        setShowResearchPrompt(false);
+        setNewlyAddedApp(null);
     };
 
     return (
@@ -629,6 +660,65 @@ function ApplicationTrackerForm() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Research Prompt Modal */}
+            {showResearchPrompt && newlyAddedApp && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-[#0D2833] rounded-xl shadow-2xl p-8 max-w-md w-full border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        {/* Success Icon */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#52B788] to-[#74C69D] rounded-full flex items-center justify-center">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <h3 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] mb-2 text-center">
+                            Application Added!
+                        </h3>
+
+                        <p className="text-[#5A8A9F] dark:text-[#7FA8B8] text-center mb-6">
+                            Your application to <span className="font-semibold text-[#023047] dark:text-[#E0F4F5]">{newlyAddedApp.company}</span> has been saved.
+                        </p>
+
+                        {/* Research Prompt */}
+                        <div className="bg-[#EDF7F9] dark:bg-[#0A1E29] rounded-lg p-4 mb-6 border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-[#E63946] to-[#F4A261] rounded-lg flex items-center justify-center text-xl flex-shrink-0">
+                                    🔍
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-[#023047] dark:text-[#E0F4F5] text-sm">
+                                        Prepare for your interview
+                                    </h4>
+                                    <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">
+                                        Research {newlyAddedApp.company} to understand their culture, competitors, and get personalized interview tips.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleResearchCompany}
+                                className="flex-1 bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                Research Now
+                            </button>
+                            <button
+                                onClick={handleSkipResearch}
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-[#1A4D5E] dark:hover:bg-[#2A5D6E] text-[#023047] dark:text-[#E0F4F5] font-semibold py-3 px-4 rounded-lg transition-all"
+                            >
+                                Maybe Later
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
