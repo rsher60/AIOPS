@@ -1031,3 +1031,23 @@ required changes to make sure that it works. I believe its because of the conver
   4. Sets variation1, variation2, variation3 as content arrives
   5. Displays 3 separate cards with copy buttons
   6. Handles token expiration with automatic reconnection
+
+
+  ##  LinkedIn PDF Upload Feature - Change Actions                                                                                
+                                                                                                                                 
+  Backend:                                                                                                                       
+  - api/server.py: Added linkedin_profile_pdf field to ResumeRequest model (already done by user), added linkedin_profile_pdf    
+  field to RoadmapRequest model, updated user_prompt_for() function to include LinkedIn content with priority instructions,      
+  updated user_prompt_for_roadmap() function to include LinkedIn content for career analysis                                     
+                                                                                                                                 
+  Frontend:                                                                                                                      
+  - pages/resume.tsx: Added linkedinFile and linkedinDragActive state, added linkedinFileInputRef ref, added handleLinkedinDrag, 
+  handleLinkedinDrop, handleLinkedinFileChange, removeLinkedinFile handlers, updated connectWithFreshToken and handleSubmit form 
+  data types to include linkedin_profile_pdf, added LinkedIn PDF upload UI component with drag-drop support                      
+  - pages/Roadmap.tsx: Same changes as resume.tsx - added state, refs, handlers, updated form data types, added LinkedIn PDF     
+  upload UI component                                                                                                            
+                                                                                                                                 
+  Prompts:                                                                                                                       
+  - prompts/resume_generator_prompt.py: Added LinkedIn as input source, added DATA PRIORITY RULES section (contact info priority:
+   Resume > LinkedIn), added LINKEDIN-SPECIFIC DATA TO EXTRACT section, updated all output sections with LinkedIn integration    
+  instructions, updated AI Enhancements Summary to explain source decisions 

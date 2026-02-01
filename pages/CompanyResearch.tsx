@@ -1,8 +1,7 @@
 import { useState, FormEvent, useRef, useEffect } from 'react';
-import { useAuth, SignInButton, SignedIn, SignedOut } from '@clerk/nextjs';
+import { useAuth, SignedIn } from '@clerk/nextjs';
 import Link from 'next/link';
 import Image from 'next/image';
-import 'react-datepicker/dist/react-datepicker.css';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -54,7 +53,7 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                                 <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Track your applications</p>
                             </div>
                         </Link>
-                        <Link href="/CompanyResearch" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
+                        <Link href="/CompanyResearch" className="flex items-center gap-4 p-4 mb-2 rounded-lg bg-[#F0F8FA] dark:bg-[#0A1E29] transition-all group" onClick={onClose}>
                             <div className="w-12 h-12 bg-gradient-to-br from-[#E63946] to-[#F4A261] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🔍</div>
                             <div>
                                 <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Company Research</h3>
@@ -82,19 +81,14 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
     );
 }
 
-function RoadmapGenerationForm() {
+function CompanyResearchForm() {
     const { getToken } = useAuth();
 
     // Form state
-    const [currentJobTitle, setCurrentJobTitle] = useState('');
+    const [companyName, setCompanyName] = useState('');
     const [targetRole, setTargetRole] = useState('');
-    const [prepTimeMonths, setPrepTimeMonths] = useState<number>(3);
+    const [researchFocus, setResearchFocus] = useState('');
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-    const [resumeFile, setResumeFile] = useState<File | null>(null);
-    const [linkedinFile, setLinkedinFile] = useState<File | null>(null);
-    const [dragActive, setDragActive] = useState(false);
-    const [linkedinDragActive, setLinkedinDragActive] = useState(false);
-    const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Streaming state
     const [output, setOutput] = useState('');
@@ -103,112 +97,11 @@ function RoadmapGenerationForm() {
     // Connection management
     const controllerRef = useRef<AbortController | null>(null);
     const isConnectingRef = useRef(false);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const linkedinFileInputRef = useRef<HTMLInputElement | null>(null);
-
-    // Handle file drag events
-    const handleDrag = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === 'dragenter' || e.type === 'dragover') {
-            setDragActive(true);
-        } else if (e.type === 'dragleave') {
-            setDragActive(false);
-        }
-    };
-
-    // Handle file drop
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
-                setResumeFile(file);
-            } else {
-                alert('Please upload a PDF file');
-            }
-        }
-    };
-
-    // Handle file input change
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            if (file.type === 'application/pdf') {
-                setResumeFile(file);
-            } else {
-                alert('Please upload a PDF file');
-            }
-        }
-    };
-
-    // Remove uploaded file
-    const removeFile = () => {
-        setResumeFile(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    // Handle LinkedIn file drag events
-    const handleLinkedinDrag = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === 'dragenter' || e.type === 'dragover') {
-            setLinkedinDragActive(true);
-        } else if (e.type === 'dragleave') {
-            setLinkedinDragActive(false);
-        }
-    };
-
-    // Handle LinkedIn file drop
-    const handleLinkedinDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setLinkedinDragActive(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
-                setLinkedinFile(file);
-            } else {
-                alert('Please upload a PDF file');
-            }
-        }
-    };
-
-    // Handle LinkedIn file input change
-    const handleLinkedinFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            if (file.type === 'application/pdf') {
-                setLinkedinFile(file);
-            } else {
-                alert('Please upload a PDF file');
-            }
-        }
-    };
-
-    // Remove uploaded LinkedIn file
-    const removeLinkedinFile = () => {
-        setLinkedinFile(null);
-        if (linkedinFileInputRef.current) {
-            linkedinFileInputRef.current.value = '';
-        }
-    };
 
     const connectWithFreshToken = async (formData: {
-        current_job_title: string;
-        role_applied_for: string;
-        time_to_prep_in_months: number;
-        resume_pdf?: string;
-        resume_filename?: string;
-        linkedin_profile_pdf?: string;
-        linkedin_profile_filename?: string;
-        additional_notes: string;
+        company_name: string;
+        target_role?: string;
+        research_focus?: string;
         model: string;
     }) => {
         if (isConnectingRef.current) return;
@@ -233,7 +126,7 @@ function RoadmapGenerationForm() {
 
             let buffer = '';
 
-            await fetchEventSource('/api/roadmap_consultation', {
+            await fetchEventSource('/api/company-research', {
                 signal: controllerRef.current.signal,
                 method: 'POST',
                 headers: {
@@ -305,24 +198,6 @@ function RoadmapGenerationForm() {
         }
     };
 
-    // Convert file to base64
-    const fileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                if (typeof reader.result === 'string') {
-                    // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-                    const base64 = reader.result.split(',')[1];
-                    resolve(base64);
-                } else {
-                    reject(new Error('Failed to read file'));
-                }
-            };
-            reader.onerror = error => reject(error);
-        });
-    };
-
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setOutput('');
@@ -330,49 +205,21 @@ function RoadmapGenerationForm() {
 
         // Prepare form data
         const formData: {
-            current_job_title: string;
-            role_applied_for: string;
-            time_to_prep_in_months: number;
-            resume_pdf?: string;
-            resume_filename?: string;
-            linkedin_profile_pdf?: string;
-            linkedin_profile_filename?: string;
-            additional_notes: string;
+            company_name: string;
+            target_role?: string;
+            research_focus?: string;
             model: string;
         } = {
-            current_job_title: currentJobTitle,
-            role_applied_for: targetRole,
-            time_to_prep_in_months: prepTimeMonths,
-            additional_notes: additionalNotes,
+            company_name: companyName,
             model: selectedModel,
         };
 
-        // Add resume PDF if uploaded
-        if (resumeFile) {
-            try {
-                const base64 = await fileToBase64(resumeFile);
-                formData.resume_pdf = base64;
-                formData.resume_filename = resumeFile.name;
-            } catch (error) {
-                console.error('Error reading PDF file:', error);
-                setOutput('Error reading PDF file. Please try again.');
-                setLoading(false);
-                return;
-            }
+        // Add optional fields if provided
+        if (targetRole.trim()) {
+            formData.target_role = targetRole;
         }
-
-        // Add LinkedIn PDF if uploaded
-        if (linkedinFile) {
-            try {
-                const base64 = await fileToBase64(linkedinFile);
-                formData.linkedin_profile_pdf = base64;
-                formData.linkedin_profile_filename = linkedinFile.name;
-            } catch (error) {
-                console.error('Error reading LinkedIn PDF file:', error);
-                setOutput('Error reading LinkedIn PDF file. Please try again.');
-                setLoading(false);
-                return;
-            }
+        if (researchFocus.trim()) {
+            formData.research_focus = researchFocus;
         }
 
         // Start connection with fresh token
@@ -388,10 +235,10 @@ function RoadmapGenerationForm() {
         };
     }, []);
 
-    // Download roadmap as docx file
-    const downloadRoadmap = async () => {
+    // Download research as docx file
+    const downloadResearch = async () => {
         try {
-            const filename = `roadmap_${currentJobTitle.replace(/\s+/g, '_')}_to_${targetRole.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+            const filename = `company_research_${companyName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
 
             // Dynamically import docx and file-saver for client-side generation
             const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
@@ -502,53 +349,39 @@ function RoadmapGenerationForm() {
                 {/* Left Panel - Form */}
                 <div className="lg:sticky lg:top-8 h-fit">
                     <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-[#0D2833] rounded-xl shadow-lg p-8 border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                        {/* Company Research Header */}
+                       
+
                         <div className="space-y-2">
-                            <label htmlFor="current-role" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Current Role
+                            <label htmlFor="company" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Company Name <span className="text-red-500">*</span>
                             </label>
                             <input
-                                id="current-role"
+                                id="company"
                                 type="text"
                                 required
-                                value={currentJobTitle}
-                                onChange={(e) => setCurrentJobTitle(e.target.value)}
+                                value={companyName}
+                                onChange={(e) => setCompanyName(e.target.value)}
                                 className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="e.g., Junior Software Developer"
+                                placeholder="e.g., Google, Stripe, Airbnb"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="target-role" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Target Role
+                            <label htmlFor="role" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Target Role <span className="text-[#5A8A9F] dark:text-[#7FA8B8]">(optional)</span>
                             </label>
                             <input
-                                id="target-role"
+                                id="role"
                                 type="text"
-                                required
                                 value={targetRole}
                                 onChange={(e) => setTargetRole(e.target.value)}
                                 className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="e.g., Senior Software Engineer"
+                                placeholder="e.g., Senior Software Engineer, Product Manager"
                             />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label htmlFor="prep-time" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Preparation Time (Months): {prepTimeMonths}
-                            </label>
-                            <input
-                                id="prep-time"
-                                type="range"
-                                min="1"
-                                max="24"
-                                value={prepTimeMonths}
-                                onChange={(e) => setPrepTimeMonths(Number(e.target.value))}
-                                className="w-full h-2 bg-[#D4F1F4] dark:bg-[#1A4D5E] rounded-lg appearance-none cursor-pointer accent-[#2E86AB]"
-                            />
-                            <div className="flex justify-between text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                <span>1 month</span>
-                                <span>24 months</span>
-                            </div>
+                            <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
+                                Add a role for personalized interview tips
+                            </p>
                         </div>
 
                         <div className="space-y-2">
@@ -568,146 +401,20 @@ function RoadmapGenerationForm() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Upload Current Resume (PDF) - Optional
-                            </label>
-                            <div
-                                onDragEnter={handleDrag}
-                                onDragLeave={handleDrag}
-                                onDragOver={handleDrag}
-                                onDrop={handleDrop}
-                                className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
-                                    dragActive
-                                        ? 'border-[#2E86AB] bg-[#fef3ee] dark:bg-[#023047]'
-                                        : 'border-[#D4F1F4] dark:border-[#1A4D5E] bg-[#F8FCFD] dark:bg-[#0A1E29]'
-                                }`}
-                            >
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleFileChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                {resumeFile ? (
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <svg className="w-8 h-8 text-[#2E86AB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                            </svg>
-                                            <div>
-                                                <p className="text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                                    {resumeFile.name}
-                                                </p>
-                                                <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                                    {(resumeFile.size / 1024).toFixed(2)} KB
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={removeFile}
-                                            className="text-[#2E86AB] hover:text-[#1B6B8F] transition-colors"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center">
-                                        <svg className="mx-auto h-12 w-12 text-[#5A8A9F] dark:text-[#7FA8B8]" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                        <p className="mt-2 text-sm text-[#023047] dark:text-[#E0F4F5]">
-                                            <span className="font-semibold">Click to upload</span> or drag and drop
-                                        </p>
-                                        <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                            PDF files only (optional)
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Upload LinkedIn Profile (PDF) - Optional
-                            </label>
-                            <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mb-2">
-                                Export your LinkedIn profile as PDF for additional context
-                            </p>
-                            <div
-                                onDragEnter={handleLinkedinDrag}
-                                onDragLeave={handleLinkedinDrag}
-                                onDragOver={handleLinkedinDrag}
-                                onDrop={handleLinkedinDrop}
-                                className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
-                                    linkedinDragActive
-                                        ? 'border-[#0077B5] bg-[#E8F4F9] dark:bg-[#023047]'
-                                        : 'border-[#D4F1F4] dark:border-[#1A4D5E] bg-[#F8FCFD] dark:bg-[#0A1E29]'
-                                }`}
-                            >
-                                <input
-                                    ref={linkedinFileInputRef}
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleLinkedinFileChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                {linkedinFile ? (
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <svg className="w-8 h-8 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                            </svg>
-                                            <div>
-                                                <p className="text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                                    {linkedinFile.name}
-                                                </p>
-                                                <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                                    {(linkedinFile.size / 1024).toFixed(2)} KB
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={removeLinkedinFile}
-                                            className="text-[#0077B5] hover:text-[#005582] transition-colors"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center">
-                                        <svg className="mx-auto h-12 w-12 text-[#0077B5]" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                        </svg>
-                                        <p className="mt-2 text-sm text-[#023047] dark:text-[#E0F4F5]">
-                                            <span className="font-semibold">Click to upload</span> or drag and drop
-                                        </p>
-                                        <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                            LinkedIn PDF export (optional)
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label htmlFor="notes" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Additional Information
+                            <label htmlFor="focus" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Research Focus <span className="text-[#5A8A9F] dark:text-[#7FA8B8]">(optional)</span>
                             </label>
                             <textarea
-                                id="notes"
-                                rows={6}
-                                value={additionalNotes}
-                                onChange={(e) => setAdditionalNotes(e.target.value)}
+                                id="focus"
+                                rows={4}
+                                value={researchFocus}
+                                onChange={(e) => setResearchFocus(e.target.value)}
                                 className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="Mention any specific skills you want to learn, constraints, preferred learning style, or career goals..."
+                                placeholder="e.g., Recent product launches, company culture, engineering team structure, competitor comparison..."
                             />
+                            <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
+                                Specify areas you want to learn more about
+                            </p>
                         </div>
 
                         <button
@@ -715,8 +422,18 @@ function RoadmapGenerationForm() {
                             disabled={loading}
                             className="w-full bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#e8956f] disabled:from-[#e8b59a] disabled:to-[#f0cdb0] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                         >
-                            {loading ? 'Generating Roadmap...' : 'Generate Roadmap'}
+                            {loading ? 'Researching Company...' : 'Research Company'}
                         </button>
+
+                        {/* Quick Tips */}
+                        <div className="mt-4 p-4 bg-[#EDF7F9] dark:bg-[#0A1E29] rounded-lg border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                            <h4 className="font-semibold text-[#023047] dark:text-[#E0F4F5] text-sm mb-2">💡 Pro Tips</h4>
+                            <ul className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] space-y-1">
+                                <li>• Add your target role for interview-specific insights</li>
+                                <li>• Use research to prepare thoughtful questions</li>
+                                <li>• Reference recent company news in your interview</li>
+                            </ul>
+                        </div>
                     </form>
                 </div>
 
@@ -726,11 +443,11 @@ function RoadmapGenerationForm() {
                         <section className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full border border-[#D4F1F4] dark:border-[#1A4D5E]">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-semibold text-[#023047] dark:text-[#E0F4F5]">
-                                    Your Career Roadmap
+                                    Research: {companyName}
                                 </h2>
                                 {!loading && (
                                     <button
-                                        onClick={downloadRoadmap}
+                                        onClick={downloadResearch}
                                         className="flex items-center gap-2 bg-[#52B788] hover:bg-[#40916C] text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -747,10 +464,36 @@ function RoadmapGenerationForm() {
                             </div>
                         </section>
                     ) : (
-                        <div className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E]">
-                            <p className="text-[#5A8A9F] dark:text-[#7FA8B8] text-center">
-                                Fill out the form and click &quot;Generate Roadmap&quot; to see your personalized career transition plan here
-                            </p>
+                        <div className="bg-[#F8FCFD] dark:bg-[#0D2833] rounded-xl shadow-lg p-8 h-full flex flex-col items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                            <div className="text-center max-w-md">
+                                <div className="w-20 h-20 bg-gradient-to-br from-[#E63946] to-[#F4A261] rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                                    🔍
+                                </div>
+                                <h3 className="text-xl font-semibold text-[#023047] dark:text-[#E0F4F5] mb-2">
+                                    Research Any Company
+                                </h3>
+                                <p className="text-[#5A8A9F] dark:text-[#7FA8B8] mb-6">
+                                    Enter a company name to get comprehensive research including company overview, culture, competitors, and interview preparation tips.
+                                </p>
+                                <div className="grid grid-cols-2 gap-3 text-left">
+                                    <div className="bg-white dark:bg-[#0A1E29] p-3 rounded-lg border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                                        <span className="text-lg">🏢</span>
+                                        <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">Company Overview</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-[#0A1E29] p-3 rounded-lg border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                                        <span className="text-lg">💼</span>
+                                        <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">Culture Insights</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-[#0A1E29] p-3 rounded-lg border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                                        <span className="text-lg">⚔️</span>
+                                        <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">Competitors</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-[#0A1E29] p-3 rounded-lg border border-[#D4F1F4] dark:border-[#1A4D5E]">
+                                        <span className="text-lg">🎯</span>
+                                        <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-1">Interview Tips</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -777,7 +520,7 @@ function RoadmapGenerationForm() {
     );
 }
 
-export default function Roadmap() {
+export default function CompanyResearch() {
     const [sidePanelOpen, setSidePanelOpen] = useState(false);
 
     return (
@@ -798,7 +541,7 @@ export default function Roadmap() {
                         </button>
 
                         <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#06A77D] bg-clip-text text-transparent">
-                            Career Transition Roadmap
+                            Company Research
                         </Link>
 
                         <SignedIn>
@@ -807,7 +550,7 @@ export default function Roadmap() {
                     </div>
                 </header>
 
-                <RoadmapGenerationForm />
+                <CompanyResearchForm />
             </div>
         </>
     );
