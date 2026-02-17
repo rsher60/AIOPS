@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import boto3
@@ -15,10 +15,22 @@ _user_cache: dict[str, dict] = {}
 # Tracks which user_ids have had a login event logged this server session
 _session_users: set[str] = set()
 
-DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "saas-user-analytics")
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "")
+# Lazily initialized — populated on first use, after load_dotenv() has run
+_dynamodb_table = None
 
-dynamodb_table = boto3.resource("dynamodb").Table(DYNAMODB_TABLE_NAME)
+
+def _get_table():
+    """Return the DynamoDB Table resource, creating it on first call."""
+    global _dynamodb_table
+    if _dynamodb_table is None:
+        table_name = os.getenv("DYNAMODB_TABLE_NAME", "saas-user-analytics")
+        _dynamodb_table = boto3.resource(
+            "dynamodb",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("DEFAULT_AWS_REGION", "us-east-1"),
+        ).Table(table_name)
+    return _dynamodb_table
 
 
 def fetch_clerk_user(user_id: str) -> dict:
@@ -30,9 +42,10 @@ def fetch_clerk_user(user_id: str) -> dict:
         return _user_cache[user_id]
 
     try:
+        clerk_secret = os.getenv("CLERK_SECRET_KEY", "")
         resp = httpx.get(
             f"https://api.clerk.com/v1/users/{user_id}",
-            headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+            headers={"Authorization": f"Bearer {clerk_secret}"},
             timeout=5,
         )
         resp.raise_for_status()
@@ -42,7 +55,6 @@ def fetch_clerk_user(user_id: str) -> dict:
         email_addresses = data.get("email_addresses", [])
         email = "unknown"
         if email_addresses:
-            # Try to match primary; fall back to first entry
             match = next(
                 (e for e in email_addresses if e.get("id") == primary_id),
                 email_addresses[0],
@@ -69,7 +81,7 @@ def log_event(user_id: str, event_type: str, **kwargs) -> None:
     """Write a single analytics event to DynamoDB. Fire-and-forget; never raises."""
     try:
         user_info = fetch_clerk_user(user_id)
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         item = {
             "user_id": user_id,
             "timestamp_event_id": f"{now}#{uuid4()}",
@@ -78,7 +90,7 @@ def log_event(user_id: str, event_type: str, **kwargs) -> None:
             "timestamp": now,
             **kwargs,
         }
-        dynamodb_table.put_item(Item=item)
+        _get_table().put_item(Item=item)
     except Exception as exc:
         logger.error(
             "Failed to log analytics event",
