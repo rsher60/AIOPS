@@ -8,4 +8,6 @@ huggingface_hub
 python-dotenv
 PyPDF2
 boto3
+python-json-logger
+httpx
 

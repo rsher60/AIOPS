@@ -2,10 +2,11 @@ import os
 import base64
 import io
 import json
+import time
 import uuid
 from pathlib import Path
 from datetime import datetime, timezone
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +20,13 @@ from botocore.exceptions import ClientError
 from saas.prompts.resume_generator_prompt import system_prompt
 from saas.prompts.message_rewriter_prompt import message_rewriter_system_prompt
 from saas.prompts.company_research_prompt import company_research_system_prompt
+from saas.logger import setup_logging, get_logger, correlation_id_var
+from saas.analytics import log_event, log_login_if_new
+
 load_dotenv()
+setup_logging()
+logger = get_logger("api")
+
 app = FastAPI()
 
 # Add CORS middleware (allows frontend to call backend)
@@ -30,6 +37,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    """Log every request with a unique correlation ID and latency."""
+    req_id = str(uuid.uuid4())
+    correlation_id_var.set(req_id)
+
+    is_health = request.url.path == "/health"
+    client_ip = request.client.host if request.client else None
+
+    if not is_health:
+        logger.info(
+            "Request started",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "client_ip": client_ip,
+            },
+        )
+
+    start = time.time()
+    response = await call_next(request)
+    latency_ms = round((time.time() - start) * 1000, 2)
+
+    if not is_health:
+        logger.info(
+            "Request completed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "latency_ms": latency_ms,
+            },
+        )
+    else:
+        logger.debug(
+            "Health check",
+            extra={"status_code": response.status_code, "latency_ms": latency_ms},
+        )
+
+    response.headers["X-Correlation-ID"] = req_id
+    return response
+
 
 # Clerk authentication setup
 clerk_config = ClerkConfig(jwks_url=os.getenv("CLERK_JWKS_URL"))
@@ -105,30 +156,28 @@ def parse_pdf_content(base64_pdf: str) -> str:
     try:
         # Decode base64 to bytes
         pdf_bytes = base64.b64decode(base64_pdf)
-        print(f"Decoded PDF bytes: {len(pdf_bytes)} bytes")
+        logger.debug("Decoded PDF", extra={"size_bytes": len(pdf_bytes)})
 
         # Create a BytesIO object from the bytes
         pdf_file = io.BytesIO(pdf_bytes)
 
         # Read PDF using PyPDF2
         pdf_reader = PdfReader(pdf_file)
-        print(f"PDF has {len(pdf_reader.pages)} pages")
+        logger.debug("PDF opened", extra={"page_count": len(pdf_reader.pages)})
 
         # Extract text from all pages
         text_content = []
         for i, page in enumerate(pdf_reader.pages):
             text = page.extract_text()
-            print(f"Extracted {len(text)} chars from page {i+1}")
+            logger.debug("Extracted page text", extra={"page": i + 1, "char_count": len(text)})
             text_content.append(text)
 
         # Join all pages with double newline
         full_text = "\n\n".join(text_content)
-        print(f"Total extracted text: {len(full_text)} characters")
+        logger.debug("PDF parsing complete", extra={"total_chars": len(full_text)})
         return full_text
     except Exception as e:
-        print(f"ERROR parsing PDF: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error("PDF parsing failed", extra={"error_type": type(e).__name__}, exc_info=True)
         raise HTTPException(status_code=400, detail=f"Error parsing PDF: {str(e)}")
 
 def user_prompt_for(request: ResumeRequest) -> str:
@@ -234,7 +283,8 @@ def user_prompt_for_roadmap(request: RoadmapRequest) -> str:
         "- Networking and application strategy"
     ])
 
-    return "\n".join(prompt_parts) 
+    return "\n".join(prompt_parts)
+
 
 # API endpoint for resume consultation
 @app.post("/api/consultation")
@@ -243,6 +293,12 @@ def consultation_summary(
     creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
 ):
     user_id = creds.decoded["sub"]
+    log_login_if_new(user_id)
+    log_event(user_id, "ai_call", endpoint="/api/consultation", model=request.model)
+    logger.info(
+        "AI request received",
+        extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model},
+    )
 
     user_prompt = user_prompt_for(request)
     prompt = [
@@ -287,16 +343,14 @@ def consultation_summary(
                 raise HTTPException(status_code=400, detail="Hugging Face API key not configured. Please add your HUGGINGFACE_API_KEY to the .env file")
 
             try:
-                # Hugging Face uses OpenAI-compatible API
                 hf_client = OpenAI(
                     base_url="https://router.huggingface.co/v1",
                     api_key=api_key,
                 )
-
-                print(f"HF Request - Model: meta-llama/Llama-3.1-70B-Instruct")
-                print(f"HF Request - Messages: {prompt}")
-                print(f"HF Request - Max tokens: 2048")
-
+                logger.debug(
+                    "HuggingFace request",
+                    extra={"model": "meta-llama/Llama-3.1-70B-Instruct", "max_tokens": 2048},
+                )
                 stream = hf_client.chat.completions.create(
                     model="meta-llama/Llama-3.1-70B-Instruct",
                     messages=prompt,
@@ -304,16 +358,13 @@ def consultation_summary(
                     max_tokens=2048,
                 )
             except Exception as e:
-                print(f"HUGGING FACE ERROR: {type(e).__name__}: {str(e)}")
-                import traceback
-                traceback.print_exc()
-                # Try to get more details from the error
+                extra = {"error_type": type(e).__name__, "model": "llama-70b"}
                 if hasattr(e, 'response'):
-                    print(f"Response status: {e.response.status_code}")
-                    print(f"Response body: {e.response.text}")
+                    extra["response_status"] = e.response.status_code
+                    extra["response_body"] = e.response.text
+                logger.error("HuggingFace API error", extra=extra, exc_info=True)
                 raise HTTPException(status_code=500, detail=f"Hugging Face API error: {str(e)}")
 
-            
         else:
             # Default to GPT if unknown model
             api_key = os.getenv("OPENAI_API_KEY")
@@ -327,29 +378,34 @@ def consultation_summary(
                 stream=True,
             )
     except HTTPException:
-        # Re-raise HTTPExceptions as-is
         raise
     except Exception as e:
-        # Catch any other errors (invalid API keys, network issues, etc.)
         error_msg = str(e)
         if "Incorrect API key" in error_msg or "invalid" in error_msg.lower():
+            logger.warning("Invalid API key", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=400, detail=f"Invalid API key for {request.model}. Please check your API key configuration in the .env file")
         elif "authentication" in error_msg.lower():
+            logger.warning("Authentication failed", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=401, detail=f"Authentication failed for {request.model}. Please verify your API key")
         else:
+            logger.error("Model initialization error", extra={"model": request.model, "user_id": user_id}, exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
 
     def event_stream():
-        # All models (OpenAI, xAI Grok, and Hugging Face) use the same response format
-        # since they all use the OpenAI-compatible API
-        for chunk in stream:
-            text = chunk.choices[0].delta.content
-            if text:
-                lines = text.split("\n")
-                for line in lines[:-1]:
-                    yield f"data: {line}\n\n"
-                    yield "data:  \n"
-                yield f"data: {lines[-1]}\n\n"
+        logger.info("AI stream started", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model})
+        try:
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    lines = text.split("\n")
+                    for line in lines[:-1]:
+                        yield f"data: {line}\n\n"
+                        yield "data:  \n"
+                    yield f"data: {lines[-1]}\n\n"
+            logger.info("AI stream completed", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model})
+        except Exception as e:
+            logger.error("AI stream error", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model}, exc_info=True)
+            raise
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -362,6 +418,12 @@ def roadmap_consultation_summary(
     creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
 ):
     user_id = creds.decoded["sub"]
+    log_login_if_new(user_id)
+    log_event(user_id, "ai_call", endpoint="/api/roadmap_consultation", model=request.model)
+    logger.info(
+        "AI request received",
+        extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model},
+    )
 
     user_prompt = user_prompt_for_roadmap(request)
     prompt = [
@@ -406,16 +468,14 @@ def roadmap_consultation_summary(
                 raise HTTPException(status_code=400, detail="Hugging Face API key not configured. Please add your HUGGINGFACE_API_KEY to the .env file")
 
             try:
-                # Hugging Face uses OpenAI-compatible API
                 hf_client = OpenAI(
                     base_url="https://router.huggingface.co/v1",
                     api_key=api_key,
                 )
-
-                print(f"HF Request - Model: meta-llama/Llama-3.1-70B-Instruct")
-                print(f"HF Request - Messages: {prompt}")
-                print(f"HF Request - Max tokens: 2048")
-
+                logger.debug(
+                    "HuggingFace request",
+                    extra={"model": "meta-llama/Llama-3.1-70B-Instruct", "max_tokens": 2048},
+                )
                 stream = hf_client.chat.completions.create(
                     model="meta-llama/Llama-3.1-70B-Instruct",
                     messages=prompt,
@@ -423,16 +483,13 @@ def roadmap_consultation_summary(
                     max_tokens=2048,
                 )
             except Exception as e:
-                print(f"HUGGING FACE ERROR: {type(e).__name__}: {str(e)}")
-                import traceback
-                traceback.print_exc()
-                # Try to get more details from the error
+                extra = {"error_type": type(e).__name__, "model": "llama-70b"}
                 if hasattr(e, 'response'):
-                    print(f"Response status: {e.response.status_code}")
-                    print(f"Response body: {e.response.text}")
+                    extra["response_status"] = e.response.status_code
+                    extra["response_body"] = e.response.text
+                logger.error("HuggingFace API error", extra=extra, exc_info=True)
                 raise HTTPException(status_code=500, detail=f"Hugging Face API error: {str(e)}")
 
-            
         else:
             # Default to GPT if unknown model
             api_key = os.getenv("OPENAI_API_KEY")
@@ -446,29 +503,34 @@ def roadmap_consultation_summary(
                 stream=True,
             )
     except HTTPException:
-        # Re-raise HTTPExceptions as-is
         raise
     except Exception as e:
-        # Catch any other errors (invalid API keys, network issues, etc.)
         error_msg = str(e)
         if "Incorrect API key" in error_msg or "invalid" in error_msg.lower():
+            logger.warning("Invalid API key", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=400, detail=f"Invalid API key for {request.model}. Please check your API key configuration in the .env file")
         elif "authentication" in error_msg.lower():
+            logger.warning("Authentication failed", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=401, detail=f"Authentication failed for {request.model}. Please verify your API key")
         else:
+            logger.error("Model initialization error", extra={"model": request.model, "user_id": user_id}, exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
 
     def event_stream():
-        # All models (OpenAI, xAI Grok, and Hugging Face) use the same response format
-        # since they all use the OpenAI-compatible API
-        for chunk in stream:
-            text = chunk.choices[0].delta.content
-            if text:
-                lines = text.split("\n")
-                for line in lines[:-1]:
-                    yield f"data: {line}\n\n"
-                    yield "data:  \n"
-                yield f"data: {lines[-1]}\n\n"
+        logger.info("AI stream started", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model})
+        try:
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    lines = text.split("\n")
+                    for line in lines[:-1]:
+                        yield f"data: {line}\n\n"
+                        yield "data:  \n"
+                    yield f"data: {lines[-1]}\n\n"
+            logger.info("AI stream completed", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model})
+        except Exception as e:
+            logger.error("AI stream error", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model}, exc_info=True)
+            raise
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -482,6 +544,19 @@ def rewrite_message(
 ):
     """Rewrite a message for professional communication with 3 variations"""
     user_id = creds.decoded["sub"]
+    log_login_if_new(user_id)
+    log_event(user_id, "ai_call", endpoint="/api/rewrite-message", model=request.model)
+    logger.info(
+        "AI request received",
+        extra={
+            "endpoint": "/api/rewrite-message",
+            "user_id": user_id,
+            "model": request.model,
+            "message_type": request.message_type,
+            "formality_level": request.formality_level,
+            "recipient_type": request.recipient_type,
+        },
+    )
 
     # Build user prompt
     formality_labels = {
@@ -567,7 +642,10 @@ ORIGINAL MESSAGE:
                 base_url="https://router.huggingface.co/v1",
                 api_key=api_key,
             )
-
+            logger.debug(
+                "HuggingFace request",
+                extra={"model": "meta-llama/Llama-3.1-70B-Instruct", "max_tokens": 2048},
+            )
             stream = hf_client.chat.completions.create(
                 model="meta-llama/Llama-3.1-70B-Instruct",
                 messages=prompt,
@@ -591,21 +669,30 @@ ORIGINAL MESSAGE:
     except Exception as e:
         error_msg = str(e)
         if "Incorrect API key" in error_msg or "invalid" in error_msg.lower():
+            logger.warning("Invalid API key", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=400, detail=f"Invalid API key for {request.model}")
         elif "authentication" in error_msg.lower():
+            logger.warning("Authentication failed", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=401, detail=f"Authentication failed for {request.model}")
         else:
+            logger.error("Model initialization error", extra={"model": request.model, "user_id": user_id}, exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
 
     def event_stream():
-        for chunk in stream:
-            text = chunk.choices[0].delta.content
-            if text:
-                lines = text.split("\n")
-                for line in lines[:-1]:
-                    yield f"data: {line}\n\n"
-                    yield "data:  \n"
-                yield f"data: {lines[-1]}\n\n"
+        logger.info("AI stream started", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model})
+        try:
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    lines = text.split("\n")
+                    for line in lines[:-1]:
+                        yield f"data: {line}\n\n"
+                        yield "data:  \n"
+                    yield f"data: {lines[-1]}\n\n"
+            logger.info("AI stream completed", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model})
+        except Exception as e:
+            logger.error("AI stream error", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model}, exc_info=True)
+            raise
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -638,6 +725,17 @@ def company_research(
 ):
     """Research a company to help with interview preparation"""
     user_id = creds.decoded["sub"]
+    log_login_if_new(user_id)
+    log_event(user_id, "ai_call", endpoint="/api/company-research", model=request.model)
+    logger.info(
+        "AI request received",
+        extra={
+            "endpoint": "/api/company-research",
+            "user_id": user_id,
+            "model": request.model,
+            "company_name": request.company_name,
+        },
+    )
 
     user_prompt = build_company_research_prompt(request)
     prompt = [
@@ -682,7 +780,10 @@ def company_research(
                 base_url="https://router.huggingface.co/v1",
                 api_key=api_key,
             )
-
+            logger.debug(
+                "HuggingFace request",
+                extra={"model": "meta-llama/Llama-3.1-70B-Instruct", "max_tokens": 4096},
+            )
             stream = hf_client.chat.completions.create(
                 model="meta-llama/Llama-3.1-70B-Instruct",
                 messages=prompt,
@@ -706,21 +807,30 @@ def company_research(
     except Exception as e:
         error_msg = str(e)
         if "Incorrect API key" in error_msg or "invalid" in error_msg.lower():
+            logger.warning("Invalid API key", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=400, detail=f"Invalid API key for {request.model}")
         elif "authentication" in error_msg.lower():
+            logger.warning("Authentication failed", extra={"model": request.model, "user_id": user_id})
             raise HTTPException(status_code=401, detail=f"Authentication failed for {request.model}")
         else:
+            logger.error("Model initialization error", extra={"model": request.model, "user_id": user_id}, exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
 
     def event_stream():
-        for chunk in stream:
-            text = chunk.choices[0].delta.content
-            if text:
-                lines = text.split("\n")
-                for line in lines[:-1]:
-                    yield f"data: {line}\n\n"
-                    yield "data:  \n"
-                yield f"data: {lines[-1]}\n\n"
+        logger.info("AI stream started", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
+        try:
+            for chunk in stream:
+                text = chunk.choices[0].delta.content
+                if text:
+                    lines = text.split("\n")
+                    for line in lines[:-1]:
+                        yield f"data: {line}\n\n"
+                        yield "data:  \n"
+                    yield f"data: {lines[-1]}\n\n"
+            logger.info("AI stream completed", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
+        except Exception as e:
+            logger.error("AI stream error", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model}, exc_info=True)
+            raise
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -734,6 +844,10 @@ def create_application(
 ):
     """Create a new job application and store it in S3"""
     user_id = creds.decoded["sub"]
+    logger.info(
+        "Creating application",
+        extra={"user_id": user_id, "company_name": request.company_name, "position": request.position},
+    )
 
     if not S3_BUCKET_NAME:
         raise HTTPException(status_code=500, detail="S3 bucket not configured")
@@ -762,14 +876,26 @@ def create_application(
             Body=json.dumps(application),
             ContentType='application/json'
         )
+        logger.info(
+            "Application created",
+            extra={"user_id": user_id, "application_id": application_id, "s3_key": s3_key},
+        )
+        log_login_if_new(user_id)
+        log_event(user_id, "app_create", endpoint="/api/applications",
+                  company_name=request.company_name, position=request.position,
+                  application_id=application_id)
 
         return {"message": "Application created successfully", "application": application}
 
     except ClientError as e:
-        print(f"S3 Error: {e}")
+        logger.error(
+            "S3 error creating application",
+            extra={"user_id": user_id, "error_code": e.response["Error"]["Code"]},
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=f"Failed to store application: {str(e)}")
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error("Error creating application", extra={"user_id": user_id}, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create application: {str(e)}")
 
 
@@ -779,6 +905,9 @@ def get_applications(
 ):
     """Retrieve all job applications for the authenticated user from S3"""
     user_id = creds.decoded["sub"]
+    log_login_if_new(user_id)
+    log_event(user_id, "app_read", endpoint="/api/applications")
+    logger.info("Fetching applications", extra={"user_id": user_id})
 
     if not S3_BUCKET_NAME:
         raise HTTPException(status_code=500, detail="S3 bucket not configured")
@@ -795,6 +924,7 @@ def get_applications(
 
         # If no objects found, return empty list
         if 'Contents' not in response:
+            logger.info("Applications retrieved", extra={"user_id": user_id, "count": 0})
             return {"applications": applications}
 
         # Fetch each application
@@ -806,19 +936,27 @@ def get_applications(
                 application = json.loads(file_content)
                 applications.append(application)
             except Exception as e:
-                print(f"Error reading application {obj['Key']}: {e}")
+                logger.warning(
+                    "Failed to read application file",
+                    extra={"user_id": user_id, "s3_key": obj['Key'], "error": str(e)},
+                )
                 continue
 
         # Sort by created_at (newest first)
         applications.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        logger.info("Applications retrieved", extra={"user_id": user_id, "count": len(applications)})
 
         return {"applications": applications}
 
     except ClientError as e:
-        print(f"S3 Error: {e}")
+        logger.error(
+            "S3 error fetching applications",
+            extra={"user_id": user_id, "error_code": e.response["Error"]["Code"]},
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=f"Failed to retrieve applications: {str(e)}")
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error("Error fetching applications", extra={"user_id": user_id}, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to get applications: {str(e)}")
 
 
@@ -830,6 +968,10 @@ def update_application(
 ):
     """Update an existing job application in S3"""
     user_id = creds.decoded["sub"]
+    logger.info(
+        "Updating application",
+        extra={"user_id": user_id, "application_id": application_id},
+    )
 
     if not S3_BUCKET_NAME:
         raise HTTPException(status_code=500, detail="S3 bucket not configured")
@@ -843,6 +985,10 @@ def update_application(
             existing_app = json.loads(existing_obj['Body'].read().decode('utf-8'))
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
+                logger.warning(
+                    "Application not found",
+                    extra={"user_id": user_id, "application_id": application_id},
+                )
                 raise HTTPException(status_code=404, detail="Application not found")
             raise
 
@@ -866,13 +1012,24 @@ def update_application(
             Body=json.dumps(updated_application),
             ContentType='application/json'
         )
+        logger.info(
+            "Application updated",
+            extra={"user_id": user_id, "application_id": application_id},
+        )
+        log_login_if_new(user_id)
+        log_event(user_id, "app_update", endpoint=f"/api/applications/{application_id}",
+                  application_id=application_id)
 
         return {"message": "Application updated successfully", "application": updated_application}
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(
+            "Error updating application",
+            extra={"user_id": user_id, "application_id": application_id},
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=f"Failed to update application: {str(e)}")
 
 
@@ -883,6 +1040,10 @@ def delete_application(
 ):
     """Delete a job application from S3"""
     user_id = creds.decoded["sub"]
+    logger.info(
+        "Deleting application",
+        extra={"user_id": user_id, "application_id": application_id},
+    )
 
     if not S3_BUCKET_NAME:
         raise HTTPException(status_code=500, detail="S3 bucket not configured")
@@ -893,13 +1054,30 @@ def delete_application(
 
         try:
             s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_key)
+            logger.info(
+                "Application deleted",
+                extra={"user_id": user_id, "application_id": application_id},
+            )
+            log_login_if_new(user_id)
+            log_event(user_id, "app_delete", endpoint=f"/api/applications/{application_id}",
+                      application_id=application_id)
             return {"message": "Application deleted successfully"}
         except ClientError as e:
-            print(f"S3 Error: {e}")
+            logger.error(
+                "S3 error deleting application",
+                extra={"user_id": user_id, "application_id": application_id, "error_code": e.response["Error"]["Code"]},
+                exc_info=True,
+            )
             raise HTTPException(status_code=500, detail=f"Failed to delete application: {str(e)}")
 
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(
+            "Error deleting application",
+            extra={"user_id": user_id, "application_id": application_id},
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=f"Failed to delete application: {str(e)}")
 
 
