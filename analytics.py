@@ -24,11 +24,14 @@ def _get_table():
     global _dynamodb_table
     if _dynamodb_table is None:
         table_name = os.getenv("DYNAMODB_TABLE_NAME", "saas-user-analytics")
+        region = os.getenv("DEFAULT_AWS_REGION", "us-east-1")
+        key_id = os.getenv("AWS_ACCESS_KEY_ID", "")
+        print(f"[ANALYTICS] init DynamoDB: table={table_name} region={region} key_id_set={bool(key_id)}", flush=True)
         _dynamodb_table = boto3.resource(
             "dynamodb",
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            region_name=os.getenv("DEFAULT_AWS_REGION", "us-east-1"),
+            aws_access_key_id=key_id or None,
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY") or None,
+            region_name=region,
         ).Table(table_name)
     return _dynamodb_table
 
@@ -90,8 +93,11 @@ def log_event(user_id: str, event_type: str, **kwargs) -> None:
             "timestamp": now,
             **kwargs,
         }
+        print(f"[ANALYTICS] writing to DynamoDB: event_type={event_type} user_id={user_id} email={user_info['email']} table={os.getenv('DYNAMODB_TABLE_NAME')} region={os.getenv('DEFAULT_AWS_REGION')}", flush=True)
         _get_table().put_item(Item=item)
+        print(f"[ANALYTICS] DynamoDB write SUCCESS: event_type={event_type} user_id={user_id}", flush=True)
     except Exception as exc:
+        print(f"[ANALYTICS] DynamoDB write FAILED: {type(exc).__name__}: {exc}", flush=True)
         logger.error(
             "Failed to log analytics event",
             extra={"user_id": user_id, "event_type": event_type, "error": str(exc)},
