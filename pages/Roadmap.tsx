@@ -244,7 +244,8 @@ function RoadmapGenerationForm() {
                 onmessage(ev) {
                     console.log('Received message:', ev.data);
                     buffer += ev.data;
-                    setOutput(buffer);
+                    const stripped = buffer.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```\s*$/, '');
+                    setOutput(stripped);
                 },
                 onerror(err) {
                     console.error('SSE onerror called:', err);

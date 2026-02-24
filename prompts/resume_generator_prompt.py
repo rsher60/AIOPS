@@ -110,6 +110,7 @@ Then provide a concise summary explaining HOW you tailored the resume based on t
 - Keep each point to 1-2 concise lines for clarity
 
 ## FORMATTING GUIDELINES
+- Output raw markdown directly. Do NOT wrap the output in code fences (```), code block markers, or any other wrapper. The first character of your response must be `#`.
 - Use proper markdown syntax (# for headers, ** for bold, - for bullets)
 - Keep the resume to 1-2 pages worth of content
 - Use consistent formatting throughout

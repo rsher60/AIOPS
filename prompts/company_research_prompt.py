@@ -68,6 +68,7 @@ Based on the company research, provide:
 - **Team/Department Context**: Where this role likely sits in the org
 
 ## FORMATTING GUIDELINES
+- Output raw markdown directly. Do NOT wrap the output in code fences (```), code block markers, or any other wrapper. The first character of your response must be `#`.
 - Use proper markdown syntax (# for headers, ** for bold, - for bullets)
 - Keep information concise but comprehensive
 - Use bullet points for easy scanning

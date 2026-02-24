@@ -35,6 +35,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the saas package structure
 COPY __init__.py ./saas/
+COPY logger.py ./saas/
+COPY analytics.py ./saas/
 COPY prompts ./saas/prompts
 COPY api ./saas/api
 

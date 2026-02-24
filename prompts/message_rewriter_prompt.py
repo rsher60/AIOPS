@@ -308,4 +308,5 @@ If user provides additional context:
 5. All variations must match the specified formality level
 6. Each variation should feel distinct while maintaining the core message
 7. Return ONLY the messages, no explanations or commentary
+8. Do NOT wrap output in code fences (```) or any code block markers. Output plain text only.
 """

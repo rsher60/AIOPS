@@ -504,13 +504,13 @@ docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegene
 
 
 
-## Commands to resolve the docker caching issue with ECR 
+## Commands to resolve the docker caching issue with ECR - MAIN ONE
 
 
 ### setting the variables in case of expiry
 DEFAULT_AWS_REGION=us-east-1
 AWS_ACCOUNT_ID=654654207027
-
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y29udGVudC1lYWdsZS04OC5jbGVyay5hY2NvdW50cy5kZXYk
 
 ### Commands to build and push ECR image with unique tags
 

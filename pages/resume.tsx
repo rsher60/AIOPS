@@ -251,20 +251,28 @@ function ResumeGenerationForm() {
                     console.log('Received message:', ev.data);
                     buffer += ev.data;
 
+                    // Some models (e.g. GPT-4o-mini) wrap the entire output in a
+                    // ```markdown ... ``` code fence. Strip it so ReactMarkdown renders
+                    // the content as formatted markdown rather than a raw code block.
+                    const stripCodeFences = (text: string): string =>
+                        text
+                            .replace(/^```[a-zA-Z]*\n?/, '')  // opening fence
+                            .replace(/\n?```\s*$/, '');        // closing fence
+
                     // Check if delimiter exists in buffer
                     const delimiterIndex = buffer.indexOf('---AI_ENHANCEMENTS_START---');
 
                     if (delimiterIndex !== -1) {
                         // Split into resume and AI changes
-                        const resume = buffer.substring(0, delimiterIndex).trim();
-                        const changes = buffer.substring(delimiterIndex + '---AI_ENHANCEMENTS_START---'.length).trim();
+                        const resume = stripCodeFences(buffer.substring(0, delimiterIndex).trim());
+                        const changes = stripCodeFences(buffer.substring(delimiterIndex + '---AI_ENHANCEMENTS_START---'.length).trim());
 
                         setResumeContent(resume);
                         setAiChanges(changes);
                         setShowAiChanges(true);
                     } else {
                         // Delimiter not found yet, all content is resume
-                        setResumeContent(buffer);
+                        setResumeContent(stripCodeFences(buffer));
                     }
 
                     setOutput(buffer);

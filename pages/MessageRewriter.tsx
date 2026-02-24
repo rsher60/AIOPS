@@ -165,12 +165,15 @@ function MessageRewriterForm() {
                 onmessage(ev) {
                     buffer += ev.data;
 
+                    const strip = (s: string) =>
+                        s.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```\s*$/, '').trim();
+
                     // Split on delimiter
                     const parts = buffer.split('---VARIATION_SEPARATOR---');
 
-                    if (parts.length >= 1) setVariation1(parts[0].trim());
-                    if (parts.length >= 2) setVariation2(parts[1].trim());
-                    if (parts.length >= 3) setVariation3(parts[2].trim());
+                    if (parts.length >= 1) setVariation1(strip(parts[0]));
+                    if (parts.length >= 2) setVariation2(strip(parts[1]));
+                    if (parts.length >= 3) setVariation3(strip(parts[2]));
                 },
                 onerror(err) {
                     console.error('SSE error:', err);
