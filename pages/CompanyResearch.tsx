@@ -6,7 +6,6 @@ import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { UserButton } from '@clerk/nextjs';
 
 // Side Panel Component
@@ -83,7 +82,7 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
 }
 
 function CompanyResearchForm() {
-    const { getToken } = useAuth();
+    const { getToken, isLoaded, isSignedIn } = useAuth();
     const router = useRouter();
 
     // Form state
@@ -92,13 +91,10 @@ function CompanyResearchForm() {
     const [researchFocus, setResearchFocus] = useState('');
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
 
-    // Streaming state
+    // Request state
     const [output, setOutput] = useState('');
     const [loading, setLoading] = useState(false);
-
-    // Connection management
-    const controllerRef = useRef<AbortController | null>(null);
-    const isConnectingRef = useRef(false);
+    const abortRef = useRef<AbortController | null>(null);
 
     // Pre-fill form from URL query parameters (from Application Tracker)
     useEffect(() => {
@@ -113,104 +109,61 @@ function CompanyResearchForm() {
         }
     }, [router.isReady, router.query]);
 
-    const connectWithFreshToken = async (formData: {
+    const runResearch = async (formData: {
         company_name: string;
         target_role?: string;
         research_focus?: string;
         model: string;
     }) => {
-        if (isConnectingRef.current) return;
-        isConnectingRef.current = true;
+        if (!isLoaded || !isSignedIn) {
+            setOutput('Please sign in to use Company Research.');
+            setLoading(false);
+            return;
+        }
+
+        let jwt: string | null = null;
+        try {
+            jwt = await getToken();
+        } catch (err) {
+            console.error('getToken() threw:', err);
+        }
+
+        if (!jwt) {
+            setOutput('Authentication failed. Please sign out via the menu and sign back in, then try again.');
+            setLoading(false);
+            return;
+        }
+
+        if (abortRef.current) {
+            abortRef.current.abort();
+        }
+        abortRef.current = new AbortController();
 
         try {
-            // Abort any existing connection
-            if (controllerRef.current) {
-                controllerRef.current.abort();
-            }
-            controllerRef.current = new AbortController();
-
-            const jwt = await getToken();
-            if (!jwt) {
-                setOutput('Authentication required');
-                setLoading(false);
-                isConnectingRef.current = false;
-                return;
-            }
-
-            console.log('Connecting with fresh token...');
-
-            let buffer = '';
-
-            await fetchEventSource('/api/company-research', {
-                signal: controllerRef.current.signal,
+            const response = await fetch('/api/company-research', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${jwt}`,
                 },
                 body: JSON.stringify(formData),
-                onmessage(ev) {
-                    console.log('Received message:', ev.data);
-                    buffer += ev.data;
-                    const stripped = buffer.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```\s*$/, '');
-                    setOutput(stripped);
-                },
-                onerror(err) {
-                    console.error('SSE onerror called:', err);
-                    isConnectingRef.current = false;
-
-                    // Handle 403 errors by reconnecting with fresh token
-                    if (err instanceof Response && err.status === 403) {
-                        console.log('Token expired in onerror, reconnecting...');
-                        setOutput('Refreshing connection...');
-                        setTimeout(() => connectWithFreshToken(formData), 1000);
-                        return;
-                    }
-
-                    console.log('Non-403 error, letting fetchEventSource handle it');
-                    setLoading(false);
-                },
-                onopen: async (response) => {
-                    console.log('SSE onopen called, status:', response.status);
-
-                    if (response.ok) {
-                        console.log('SSE connection opened successfully');
-                        isConnectingRef.current = false;
-                    } else if (response.status === 403) {
-                        console.log('403 detected in onopen, triggering reconnect');
-                        isConnectingRef.current = false;
-                        // Manually trigger reconnect for 403
-                        setOutput('Refreshing connection...');
-                        setTimeout(() => connectWithFreshToken(formData), 1000);
-                        throw new Error('Authentication failed - triggering reconnect');
-                    } else {
-                        console.log('Non-403 error in onopen:', response.status);
-                        isConnectingRef.current = false;
-                        setLoading(false);
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                },
-                onclose() {
-                    console.log('SSE connection closed');
-                    isConnectingRef.current = false;
-                    setLoading(false);
-                }
+                signal: abortRef.current.signal,
             });
-        } catch (error) {
-            console.error('Failed to connect:', error);
-            isConnectingRef.current = false;
 
-            // Only show connection failed if not manually aborted
-            if (!controllerRef.current?.signal.aborted) {
-                // If it's a network error, try to reconnect a few times
-                if (error instanceof TypeError || (error instanceof Error && error.message?.includes('fetch'))) {
-                    console.log('Network error, retrying...');
-                    setTimeout(() => connectWithFreshToken(formData), 2000);
-                } else {
-                    setOutput('Connection failed. Please refresh the page.');
-                    setLoading(false);
-                }
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                setOutput(`Request failed (${response.status}): ${err.detail ?? 'Please try again.'}`);
+                setLoading(false);
+                return;
             }
+
+            const data = await response.json();
+            setOutput(data.content ?? '');
+        } catch (error) {
+            if (abortRef.current?.signal.aborted) return;
+            setOutput('Request failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -238,15 +191,14 @@ function CompanyResearchForm() {
             formData.research_focus = researchFocus;
         }
 
-        // Start connection with fresh token
-        await connectWithFreshToken(formData);
+        await runResearch(formData);
     }
 
     // Cleanup on component unmount
     useEffect(() => {
         return () => {
-            if (controllerRef.current) {
-                controllerRef.current.abort();
+            if (abortRef.current) {
+                abortRef.current.abort();
             }
         };
     }, []);
@@ -438,7 +390,7 @@ function CompanyResearchForm() {
                             disabled={loading}
                             className="w-full bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#e8956f] disabled:from-[#e8b59a] disabled:to-[#f0cdb0] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                         >
-                            {loading ? 'Researching Company...' : 'Research Company'}
+                            {loading ? 'Researching... (may take 2–3 min)' : 'Research Company'}
                         </button>
 
                         {/* Quick Tips */}

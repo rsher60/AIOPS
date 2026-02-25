@@ -10,4 +10,7 @@ PyPDF2
 boto3
 python-json-logger
 httpx
-
+tavily 
+langchain-groq 
+deepagents
+langchain-openai

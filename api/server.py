@@ -22,6 +22,10 @@ from saas.prompts.message_rewriter_prompt import message_rewriter_system_prompt
 from saas.prompts.company_research_prompt import company_research_system_prompt
 from saas.logger import setup_logging, get_logger, correlation_id_var
 from saas.analytics import log_event, log_login_if_new
+from tavily import TavilyClient
+from typing import Literal
+from deepagents import create_deep_agent
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 setup_logging()
@@ -717,13 +721,35 @@ def build_company_research_prompt(request: CompanyResearchRequest) -> str:
 
     return "\n".join(prompt_parts)
 
+# --- Deep research agent setup ---
+
+tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+def web_search(
+    query: str,
+    max_results: int = 5,
+    topic: Literal["general", "sports", "news", "finance"] = "general",
+    include_raw_content: bool = False,
+):
+    """Run a web search via Tavily."""
+    return tavily_client.search(
+        query,
+        max_results=max_results,
+        include_raw_content=include_raw_content,
+        topic=topic,
+    )
+
+research_instructions = """\
+You are an expert researcher. Your job is to conduct \
+thorough research, and then write a polished report. \
+"""
 
 @app.post("/api/company-research")
 def company_research(
     request: CompanyResearchRequest,
     creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
 ):
-    """Research a company to help with interview preparation"""
+    """Research a company using a deep research agent with live web search."""
     user_id = creds.decoded["sub"]
     log_login_if_new(user_id)
     log_event(user_id, "ai_call", endpoint="/api/company-research", model=request.model)
@@ -738,70 +764,41 @@ def company_research(
     )
 
     user_prompt = build_company_research_prompt(request)
-    prompt = [
-        {"role": "system", "content": company_research_system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
 
-    # Select AI model
+    # Resolve the LangChain chat model from the user's model selection
     try:
         if request.model == "gpt-4o-mini":
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key or api_key.startswith("your_"):
                 raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+            chat_model = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
 
-            client = OpenAI(api_key=api_key)
-            stream = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=prompt,
-                stream=True,
-            )
         elif request.model == "grok-beta":
             api_key = os.getenv("XAI_API_KEY")
             if not api_key or api_key.startswith("your_"):
                 raise HTTPException(status_code=400, detail="xAI API key not configured")
-
-            client = OpenAI(
-                base_url="https://api.groq.com/openai/v1",
-                api_key=os.getenv("XAI_API_KEY"),
-            )
-
-            stream = client.chat.completions.create(
+            chat_model = ChatOpenAI(
                 model="llama-3.3-70b-versatile",
-                messages=prompt,
-                stream=True,
+                base_url="https://api.groq.com/openai/v1",
+                api_key=api_key,
             )
+
         elif request.model == "llama-70b":
             api_key = os.getenv("HUGGINGFACE_API_KEY")
             if not api_key or api_key.startswith("your_"):
                 raise HTTPException(status_code=400, detail="Hugging Face API key not configured")
-
-            hf_client = OpenAI(
+            chat_model = ChatOpenAI(
+                model="meta-llama/Llama-3.1-70B-Instruct",
                 base_url="https://router.huggingface.co/v1",
                 api_key=api_key,
             )
-            logger.debug(
-                "HuggingFace request",
-                extra={"model": "meta-llama/Llama-3.1-70B-Instruct", "max_tokens": 4096},
-            )
-            stream = hf_client.chat.completions.create(
-                model="meta-llama/Llama-3.1-70B-Instruct",
-                messages=prompt,
-                stream=True,
-                max_tokens=4096,
-            )
+
         else:
-            # Default to GPT
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key or api_key.startswith("your_"):
                 raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+            chat_model = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
 
-            client = OpenAI(api_key=api_key)
-            stream = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=prompt,
-                stream=True,
-            )
     except HTTPException:
         raise
     except Exception as e:
@@ -816,23 +813,22 @@ def company_research(
             logger.error("Model initialization error", extra={"model": request.model, "user_id": user_id}, exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
 
-    def event_stream():
-        logger.info("AI stream started", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
-        try:
-            for chunk in stream:
-                text = chunk.choices[0].delta.content
-                if text:
-                    lines = text.split("\n")
-                    for line in lines[:-1]:
-                        yield f"data: {line}\n\n"
-                        yield "data:  \n"
-                    yield f"data: {lines[-1]}\n\n"
-            logger.info("AI stream completed", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
-        except Exception as e:
-            logger.error("AI stream error", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model}, exc_info=True)
-            raise
+    # Create the deep research agent with the web_search tool
+    agent = create_deep_agent(
+        model=chat_model,
+        tools=[web_search],
+        system_prompt=research_instructions,
+    )
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    logger.info("AI request started", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
+    try:
+        result = agent.invoke({"messages": [{"role": "user", "content": user_prompt}]})
+        content = result["messages"][-1].content
+        logger.info("AI request completed", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
+        return {"content": content}
+    except Exception as e:
+        logger.error("Deep agent error", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model}, exc_info=True)
+        raise HTTPException(status_code=500, detail="Research failed. Please try again.")
 
 
 # Application Tracking Endpoints
@@ -1085,6 +1081,9 @@ def delete_application(
 def health_check():
     """Health check endpoint for AWS App Runner"""
     return {"status": "healthy"}
+
+
+
 
 # Serve static files (our Next.js export) - MUST BE LAST!
 static_path = Path("static")
