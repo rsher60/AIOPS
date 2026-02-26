@@ -91,11 +91,11 @@ function ResumeGenerationForm() {
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
     const [applicationDate, setApplicationDate] = useState<Date | null>(new Date());
     const [roleAppliedFor, setRoleAppliedFor] = useState('');
-    const [YourPhoneNumber, setYourPhoneNumber] = useState('');
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [linkedinFile, setLinkedinFile] = useState<File | null>(null);
     const [dragActive, setDragActive] = useState(false);
     const [linkedinDragActive, setLinkedinDragActive] = useState(false);
+    const [jobDescription, setJobDescription] = useState('');
     const [additionalNotes, setAdditionalNotes] = useState('');
 
     // Streaming state
@@ -209,11 +209,11 @@ function ResumeGenerationForm() {
         applicant_name: string;
         application_date: string;
         role_applied_for: string;
-        phone_number: string;
         resume_pdf?: string;
         resume_filename?: string;
         linkedin_profile_pdf?: string;
         linkedin_profile_filename?: string;
+        job_description?: string;
         additional_notes: string;
         model: string;
     }) => {
@@ -367,18 +367,18 @@ function ResumeGenerationForm() {
             applicant_name: string;
             application_date: string;
             role_applied_for: string;
-            phone_number: string;
             resume_pdf?: string;
             resume_filename?: string;
             linkedin_profile_pdf?: string;
             linkedin_profile_filename?: string;
+            job_description?: string;
             additional_notes: string;
             model: string;
         } = {
             applicant_name: applicantName,
             application_date: applicationDate?.toISOString().slice(0, 10) || '',
             role_applied_for: roleAppliedFor,
-            phone_number: YourPhoneNumber,
+            job_description: jobDescription || undefined,
             additional_notes: additionalNotes,
             model: selectedModel,
         };
@@ -599,21 +599,6 @@ function ResumeGenerationForm() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label htmlFor="phone" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Your Phone Number
-                            </label>
-                            <input
-                                id="phone"
-                                type="tel"
-                                required
-                                value={YourPhoneNumber}
-                                onChange={(e) => setYourPhoneNumber(e.target.value)}
-                                className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
-                                placeholder="e.g., +1 (555) 123-4567"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
                             <label className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
                                 Upload Resume (PDF)
                             </label>
@@ -743,8 +728,25 @@ function ResumeGenerationForm() {
                         </div>
 
                         <div className="space-y-2">
+                            <label htmlFor="jobDescription" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
+                                Job Description <span className="text-[#5A8A9F] dark:text-[#7FA8B8] font-normal">(Optional)</span>
+                            </label>
+                            <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
+                                Paste the job posting to tailor your resume with matching keywords and priorities
+                            </p>
+                            <textarea
+                                id="jobDescription"
+                                rows={6}
+                                value={jobDescription}
+                                onChange={(e) => setJobDescription(e.target.value)}
+                                className="w-full px-4 py-2 border border-[#D4F1F4] dark:border-[#1A4D5E] rounded-lg focus:ring-2 focus:ring-[#2E86AB] focus:border-transparent dark:bg-[#0A1E29] dark:text-[#E0F4F5] bg-[#F8FCFD]"
+                                placeholder="Paste the full job description here..."
+                            />
+                        </div>
+
+                        <div className="space-y-2">
                             <label htmlFor="notes" className="block text-sm font-medium text-[#023047] dark:text-[#E0F4F5]">
-                                Additional Notes from Applicant
+                                Additional Instructions from Applicant
                             </label>
                             <textarea
                                 id="notes"

@@ -4,6 +4,7 @@ import io
 import json
 import time
 import uuid
+import threading
 from pathlib import Path
 from datetime import datetime, timezone
 from fastapi import FastAPI, Depends, HTTPException, Request
@@ -103,10 +104,11 @@ class ResumeRequest(BaseModel):
     applicant_name: str
     application_date: str
     role_applied_for: str
-    phone_number: str
     resume_pdf: str | None = None
     linkedin_profile_pdf: str | None = None
     resume_filename: str | None = None
+    linkedin_filename: str | None = None
+    job_description: str | None = None
     additional_notes: str
     model: str
 
@@ -118,6 +120,7 @@ class RoadmapRequest(BaseModel):
     resume_pdf: str | None = None
     linkedin_profile_pdf: str | None = None
     resume_filename: str | None = None
+    linkedin_filename: str | None = None
     additional_notes: str
     model: str
 
@@ -183,19 +186,153 @@ def parse_pdf_content(base64_pdf: str) -> str:
     except Exception as e:
         logger.error("PDF parsing failed", extra={"error_type": type(e).__name__}, exc_info=True)
         raise HTTPException(status_code=400, detail=f"Error parsing PDF: {str(e)}")
+    
+
+## Hybrid file parsing: PyPDF2 for text-based PDFs, GPT-4o-mini Vision OCR for scanned PDFs and images
+
+_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff"}
+_MIME_MAP = {
+    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+    "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp", "tiff": "image/tiff",
+}
+
+
+def extract_text_with_ocr(file_bytes: bytes, filename: str | None = None) -> str:
+    """
+    Extract text from a PDF or image file using GPT-4o-mini Vision OCR.
+
+    For PDFs: each page is rendered to a PNG via PyMuPDF and sent to the vision model.
+    For images (jpg/png/etc.): the raw bytes are sent directly to the vision model.
+
+    Args:
+        file_bytes: Raw bytes of the file (PDF or image)
+        filename:   Original filename, used to detect the file type
+
+    Returns:
+        Extracted text, one page per block joined with double newlines
+    """
+    import fitz  # PyMuPDF
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key or api_key.startswith("your_"):
+        raise HTTPException(status_code=400, detail="OpenAI API key not configured for OCR")
+    client = OpenAI(api_key=api_key)
+
+    ext = (filename or "").lower().rsplit(".", 1)[-1]
+    is_image = ext in _IMAGE_EXTENSIONS
+
+    if is_image:
+        # Direct image upload — send base64 straight to the vision model
+        mime = _MIME_MAP.get(ext, "image/jpeg")
+        pages_b64 = [(base64.b64encode(file_bytes).decode("utf-8"), mime)]
+        logger.debug("OCR: image input detected", extra={"ext": ext})
+    else:
+        # PDF — render each page to PNG at 2× zoom for legibility
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        logger.debug("OCR: PDF opened", extra={"page_count": doc.page_count})
+        pages_b64 = []
+        for page_num in range(doc.page_count):
+            page = doc[page_num]
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            pages_b64.append((base64.b64encode(pix.tobytes("png")).decode("utf-8"), "image/png"))
+        doc.close()
+
+    all_text: list[str] = []
+    for i, (img_b64, mime) in enumerate(pages_b64):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "Extract all text from this document page exactly as it appears. "
+                            "Preserve the structure, bullet points, section headings, and formatting. "
+                            "Return only the extracted text with no additional commentary."
+                        ),
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime};base64,{img_b64}",
+                            "detail": "high",
+                        },
+                    },
+                ],
+            }],
+            max_tokens=2048,
+        )
+        page_text = response.choices[0].message.content
+        all_text.append(page_text)
+        logger.debug("OCR page extracted", extra={"page": i + 1, "char_count": len(page_text)})
+
+    full_text = "\n\n".join(all_text)
+    logger.debug("OCR extraction complete", extra={"total_chars": len(full_text)})
+    return full_text
+
+
+def parse_file_content(base64_file: str, filename: str | None = None) -> str:
+    """
+    Hybrid file parser. Strategy:
+    - Image files (.jpg, .png, etc.) → OCR via GPT-4o-mini Vision directly.
+    - PDFs → try PyPDF2 text extraction first (fast, free).
+              If extracted text is sparse (<200 chars, likely a scanned PDF),
+              fall back to OCR via GPT-4o-mini Vision.
+
+    Args:
+        base64_file: Base64-encoded file content
+        filename:    Original filename (used to detect images vs PDFs)
+
+    Returns:
+        Extracted text string
+    """
+    try:
+        file_bytes = base64.b64decode(base64_file)
+        ext = (filename or "").lower().rsplit(".", 1)[-1]
+
+        if ext in _IMAGE_EXTENSIONS:
+            logger.debug("parse_file_content: image detected, using OCR", extra={"ext": ext})
+            return extract_text_with_ocr(file_bytes, filename)
+
+        # PDF path — attempt PyPDF2 first
+        try:
+            pdf_reader = PdfReader(io.BytesIO(file_bytes))
+            text_parts = [page.extract_text() or "" for page in pdf_reader.pages]
+            full_text = "\n\n".join(t for t in text_parts if t.strip())
+            if len(full_text.strip()) >= 200:
+                logger.debug("parse_file_content: PyPDF2 succeeded", extra={"char_count": len(full_text)})
+                return full_text
+            logger.debug("parse_file_content: PyPDF2 text sparse, falling back to OCR",
+                         extra={"char_count": len(full_text.strip())})
+        except Exception:
+            logger.debug("parse_file_content: PyPDF2 failed, falling back to OCR")
+
+        return extract_text_with_ocr(file_bytes, filename)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("parse_file_content failed", extra={"error_type": type(e).__name__}, exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Error parsing file: {str(e)}")
+
+
+
+
+
+
 
 def user_prompt_for(request: ResumeRequest) -> str:
     prompt_parts = [
         "Create a professional resume for:",
         f"Applicant Name: {request.applicant_name}",
-        f"Phone Number: {request.phone_number}",
         f"Application Date: {request.application_date}",
         f"Role Applied For: {request.role_applied_for}",
     ]
 
-    # Add existing resume content if PDF was uploaded
+    # Add existing resume content if PDF/image was uploaded
     if request.resume_pdf:
-        pdf_content = parse_pdf_content(request.resume_pdf)
+        pdf_content = parse_file_content(request.resume_pdf, request.resume_filename)
         prompt_parts.extend([
             "",
             "=== EXISTING RESUME CONTENT ===",
@@ -206,7 +343,7 @@ def user_prompt_for(request: ResumeRequest) -> str:
         ])
 
     if request.linkedin_profile_pdf:
-        linkedin_pdf_content = parse_pdf_content(request.linkedin_profile_pdf)
+        linkedin_pdf_content = parse_file_content(request.linkedin_profile_pdf, request.linkedin_filename)
         prompt_parts.extend([
             "",
             "=== LINKEDIN PROFILE CONTENT ===",
@@ -219,10 +356,22 @@ def user_prompt_for(request: ResumeRequest) -> str:
             "IMPORTANT: When generating the resume, prioritize LinkedIn data for contact information (email, phone, location). Merge skills, experience details, and certifications from both sources. Extract valuable content like headline, recommendations, and endorsements."
         ])
 
+    if request.job_description:
+        prompt_parts.extend([
+            "",
+            "=== JOB DESCRIPTION (HIGH PRIORITY — tailor resume to match this) ===",
+            request.job_description,
+            "=== END OF JOB DESCRIPTION ===",
+            "",
+            "CRITICAL: Use the job description above as the primary tailoring guide. "
+            "Mirror its exact keywords, prioritise matching skills, and rewrite experience "
+            "bullets to directly address the responsibilities and requirements listed."
+        ])
+
     # Add additional notes
     prompt_parts.extend([
         "",
-        "Additional Notes from Applicant:",
+        "Additional Instructions from Applicant:",
         request.additional_notes if request.additional_notes else "None provided"
     ])
 
@@ -246,9 +395,9 @@ def user_prompt_for_roadmap(request: RoadmapRequest) -> str:
         f"Preparation Time: {request.time_to_prep_in_months} months",
     ]
 
-    # Add existing resume content if PDF was uploaded
+    # Add existing resume content if PDF/image was uploaded
     if request.resume_pdf:
-        pdf_content = parse_pdf_content(request.resume_pdf)
+        pdf_content = parse_file_content(request.resume_pdf, request.resume_filename)
         prompt_parts.extend([
             "",
             "=== CURRENT RESUME/BACKGROUND ===",
@@ -258,9 +407,9 @@ def user_prompt_for_roadmap(request: RoadmapRequest) -> str:
             "Please analyze the above resume to understand the candidate's current skills and experience."
         ])
 
-    # Add LinkedIn profile content if PDF was uploaded
+    # Add LinkedIn profile content if PDF/image was uploaded
     if request.linkedin_profile_pdf:
-        linkedin_pdf_content = parse_pdf_content(request.linkedin_profile_pdf)
+        linkedin_pdf_content = parse_file_content(request.linkedin_profile_pdf, request.linkedin_filename)
         prompt_parts.extend([
             "",
             "=== LINKEDIN PROFILE CONTENT ===",
@@ -744,91 +893,183 @@ You are an expert researcher. Your job is to conduct \
 thorough research, and then write a polished report. \
 """
 
+# In-memory store for background research tasks.
+# Keys are task UUIDs; values are dicts with status/content/error.
+_research_tasks: dict = {}
+
+
+def _resolve_chat_model(model: str) -> ChatOpenAI:
+    """Return a ChatOpenAI instance for the requested model string."""
+    if model == "gpt-4o-mini":
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+        return ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+    elif model == "grok-beta":
+        api_key = os.getenv("XAI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="xAI API key not configured")
+        return ChatOpenAI(
+            model="llama-3.3-70b-versatile",
+            base_url="https://api.groq.com/openai/v1",
+            api_key=api_key,
+        )
+    elif model == "llama-70b":
+        api_key = os.getenv("HUGGINGFACE_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="Hugging Face API key not configured")
+        return ChatOpenAI(
+            model="meta-llama/Llama-3.1-70B-Instruct",
+            base_url="https://router.huggingface.co/v1",
+            api_key=api_key,
+        )
+    else:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+        return ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+
+
+def _run_simple_research(request: CompanyResearchRequest, user_prompt: str) -> str:
+    """
+    Fallback research path for Grok / Llama models that cannot handle deepagents'
+    complex multi-tool schemas (they emit XML tool syntax and fail with tool_use_failed).
+
+    Strategy: run several targeted Tavily searches, aggregate the raw results as
+    context, then ask the LLM to synthesise a report — no tool calling involved.
+    """
+    company = request.company_name
+    role = request.target_role or "general role"
+
+    queries = [
+        f"{company} company overview mission values culture",
+        f"{company} {role} interview process hiring tips",
+        f"{company} recent news 2024 2025",
+        f"{company} engineering culture tech stack",
+        f"{company} employee reviews salary compensation",
+    ]
+
+    search_results: list[str] = []
+    for q in queries:
+        try:
+            result = web_search(q, max_results=3)
+            # Tavily returns a dict; stringify just the results list for brevity
+            results_list = result.get("results", result) if isinstance(result, dict) else result
+            search_results.append(f"Query: {q}\n{json.dumps(results_list, indent=2)}")
+        except Exception as exc:
+            logger.warning("Tavily search failed", extra={"query": q, "error": str(exc)})
+
+    context = "\n\n---\n\n".join(search_results) if search_results else "No search results available."
+
+    synthesis_prompt = (
+        f"{user_prompt}\n\n"
+        "=== WEB RESEARCH DATA ===\n"
+        f"{context}\n"
+        "=== END OF RESEARCH DATA ===\n\n"
+        "Using the research data above, write a comprehensive company research report "
+        "covering: company overview, culture, recent news, role-specific interview tips, "
+        "compensation, and any other relevant insights."
+    )
+
+    # Route to the correct non-GPT client (no tool schemas, plain chat completion)
+    if request.model == "grok-beta":
+        api_key = os.getenv("XAI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="xAI API key not configured")
+        client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key)
+        model_name = "llama-3.3-70b-versatile"
+    elif request.model == "llama-70b":
+        api_key = os.getenv("HUGGINGFACE_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="Hugging Face API key not configured")
+        client = OpenAI(base_url="https://router.huggingface.co/v1", api_key=api_key)
+        model_name = "meta-llama/Llama-3.1-70B-Instruct"
+    else:
+        # Fallback to GPT if model is unrecognised
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+        client = OpenAI(api_key=api_key)
+        model_name = "gpt-4o-mini"
+
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": research_instructions},
+            {"role": "user", "content": synthesis_prompt},
+        ],
+        max_tokens=4096,
+    )
+    return response.choices[0].message.content
+
+
 @app.post("/api/company-research")
 def company_research(
     request: CompanyResearchRequest,
     creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
 ):
-    """Research a company using a deep research agent with live web search."""
+    """
+    Start a background deep-research task and return a task_id immediately.
+    The client should poll GET /api/research-status/{task_id} until done.
+    This avoids HTTP proxy timeouts for the 2-5 minute agent run.
+
+    GPT-4o-mini  → deepagents (multi-step web search agent)
+    Grok / Llama → simple Tavily search + direct LLM synthesis
+                   (these models fail with deepagents' complex tool schemas)
+    """
     user_id = creds.decoded["sub"]
     log_login_if_new(user_id)
     log_event(user_id, "ai_call", endpoint="/api/company-research", model=request.model)
     logger.info(
-        "AI request received",
-        extra={
-            "endpoint": "/api/company-research",
-            "user_id": user_id,
-            "model": request.model,
-            "company_name": request.company_name,
-        },
+        "Company research task submitted",
+        extra={"user_id": user_id, "model": request.model, "company": request.company_name},
     )
 
     user_prompt = build_company_research_prompt(request)
+    task_id = str(uuid.uuid4())
+    _research_tasks[task_id] = {"status": "running", "content": None, "error": None}
 
-    # Resolve the LangChain chat model from the user's model selection
-    try:
-        if request.model == "gpt-4o-mini":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key or api_key.startswith("your_"):
-                raise HTTPException(status_code=400, detail="OpenAI API key not configured")
-            chat_model = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+    # Build deep agent only for GPT-4o-mini; Grok/Llama use the simple path
+    agent = None
+    if request.model == "gpt-4o-mini":
+        chat_model = _resolve_chat_model(request.model)
+        agent = create_deep_agent(
+            model=chat_model,
+            tools=[web_search],
+            system_prompt=research_instructions,
+        )
 
-        elif request.model == "grok-beta":
-            api_key = os.getenv("XAI_API_KEY")
-            if not api_key or api_key.startswith("your_"):
-                raise HTTPException(status_code=400, detail="xAI API key not configured")
-            chat_model = ChatOpenAI(
-                model="llama-3.3-70b-versatile",
-                base_url="https://api.groq.com/openai/v1",
-                api_key=api_key,
-            )
+    def run_agent():
+        try:
+            if agent is not None:
+                # Deep agent path (GPT-4o-mini)
+                result = agent.invoke({"messages": [{"role": "user", "content": user_prompt}]})
+                content = result["messages"][-1].content
+            else:
+                # Simple Tavily + LLM path (Grok / Llama)
+                content = _run_simple_research(request, user_prompt)
+            _research_tasks[task_id]["content"] = content
+            _research_tasks[task_id]["status"] = "done"
+            logger.info("Company research task completed", extra={"task_id": task_id, "user_id": user_id})
+        except Exception as exc:
+            _research_tasks[task_id]["error"] = str(exc)
+            _research_tasks[task_id]["status"] = "failed"
+            logger.error("Company research task failed", extra={"task_id": task_id, "user_id": user_id}, exc_info=True)
 
-        elif request.model == "llama-70b":
-            api_key = os.getenv("HUGGINGFACE_API_KEY")
-            if not api_key or api_key.startswith("your_"):
-                raise HTTPException(status_code=400, detail="Hugging Face API key not configured")
-            chat_model = ChatOpenAI(
-                model="meta-llama/Llama-3.1-70B-Instruct",
-                base_url="https://router.huggingface.co/v1",
-                api_key=api_key,
-            )
+    threading.Thread(target=run_agent, daemon=True).start()
+    return {"task_id": task_id}
 
-        else:
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key or api_key.startswith("your_"):
-                raise HTTPException(status_code=400, detail="OpenAI API key not configured")
-            chat_model = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_msg = str(e)
-        if "Incorrect API key" in error_msg or "invalid" in error_msg.lower():
-            logger.warning("Invalid API key", extra={"model": request.model, "user_id": user_id})
-            raise HTTPException(status_code=400, detail=f"Invalid API key for {request.model}")
-        elif "authentication" in error_msg.lower():
-            logger.warning("Authentication failed", extra={"model": request.model, "user_id": user_id})
-            raise HTTPException(status_code=401, detail=f"Authentication failed for {request.model}")
-        else:
-            logger.error("Model initialization error", extra={"model": request.model, "user_id": user_id}, exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error initializing {request.model}: {error_msg}")
-
-    # Create the deep research agent with the web_search tool
-    agent = create_deep_agent(
-        model=chat_model,
-        tools=[web_search],
-        system_prompt=research_instructions,
-    )
-
-    logger.info("AI request started", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
-    try:
-        result = agent.invoke({"messages": [{"role": "user", "content": user_prompt}]})
-        content = result["messages"][-1].content
-        logger.info("AI request completed", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model})
-        return {"content": content}
-    except Exception as e:
-        logger.error("Deep agent error", extra={"endpoint": "/api/company-research", "user_id": user_id, "model": request.model}, exc_info=True)
-        raise HTTPException(status_code=500, detail="Research failed. Please try again.")
+@app.get("/api/research-status/{task_id}")
+def research_status(
+    task_id: str,
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    """Poll this endpoint after POST /api/company-research to check task progress."""
+    task = _research_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
 
 # Application Tracking Endpoints

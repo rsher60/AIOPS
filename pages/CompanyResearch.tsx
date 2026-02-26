@@ -94,7 +94,8 @@ function CompanyResearchForm() {
     // Request state
     const [output, setOutput] = useState('');
     const [loading, setLoading] = useState(false);
-    const abortRef = useRef<AbortController | null>(null);
+    const [statusMessage, setStatusMessage] = useState('');
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Pre-fill form from URL query parameters (from Application Tracker)
     useEffect(() => {
@@ -108,6 +109,13 @@ function CompanyResearchForm() {
             }
         }
     }, [router.isReady, router.query]);
+
+    const stopPolling = () => {
+        if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+        }
+    };
 
     const runResearch = async (formData: {
         company_name: string;
@@ -129,42 +137,79 @@ function CompanyResearchForm() {
         }
 
         if (!jwt) {
-            setOutput('Authentication failed. Please sign out via the menu and sign back in, then try again.');
+            setOutput('Authentication failed. Please sign out and sign back in, then try again.');
             setLoading(false);
             return;
         }
 
-        if (abortRef.current) {
-            abortRef.current.abort();
-        }
-        abortRef.current = new AbortController();
-
+        // Step 1: POST to start the research task. Returns task_id immediately (no timeout risk).
+        let taskId: string;
         try {
-            const response = await fetch('/api/company-research', {
+            setStatusMessage('Starting research...');
+            const startRes = await fetch('/api/company-research', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${jwt}`,
                 },
                 body: JSON.stringify(formData),
-                signal: abortRef.current.signal,
             });
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                setOutput(`Request failed (${response.status}): ${err.detail ?? 'Please try again.'}`);
+            if (!startRes.ok) {
+                const err = await startRes.json().catch(() => ({}));
+                setOutput(`Failed to start research (${startRes.status}): ${err.detail ?? 'Please try again.'}`);
                 setLoading(false);
+                setStatusMessage('');
                 return;
             }
 
-            const data = await response.json();
-            setOutput(data.content ?? '');
-        } catch (error) {
-            if (abortRef.current?.signal.aborted) return;
-            setOutput('Request failed. Please try again.');
-        } finally {
+            const { task_id } = await startRes.json();
+            taskId = task_id;
+        } catch {
+            setOutput('Could not reach the server. Please try again.');
             setLoading(false);
+            setStatusMessage('');
+            return;
         }
+
+        // Step 2: Poll GET /api/research-status/{task_id} every 5 seconds.
+        // Each poll is a fast lookup — no timeout risk.
+        let elapsed = 0;
+        setStatusMessage('Research in progress...');
+
+        pollRef.current = setInterval(async () => {
+            elapsed += 5;
+            setStatusMessage(`Research in progress... (${elapsed}s)`);
+
+            let freshJwt: string | null = null;
+            try { freshJwt = await getToken(); } catch { /* ignore */ }
+            if (!freshJwt) return; // token temporarily unavailable, retry next tick
+
+            try {
+                const statusRes = await fetch(`/api/research-status/${taskId}`, {
+                    headers: { Authorization: `Bearer ${freshJwt}` },
+                });
+
+                if (!statusRes.ok) return; // transient error, retry next tick
+
+                const task = await statusRes.json();
+
+                if (task.status === 'done') {
+                    stopPolling();
+                    setOutput(task.content ?? '');
+                    setLoading(false);
+                    setStatusMessage('');
+                } else if (task.status === 'failed') {
+                    stopPolling();
+                    setOutput(`Research failed: ${task.error ?? 'Unknown error. Please try again.'}`);
+                    setLoading(false);
+                    setStatusMessage('');
+                }
+                // status === 'running' → keep polling
+            } catch {
+                // network blip, retry next tick
+            }
+        }, 5000);
     };
 
     async function handleSubmit(e: FormEvent) {
@@ -197,9 +242,7 @@ function CompanyResearchForm() {
     // Cleanup on component unmount
     useEffect(() => {
         return () => {
-            if (abortRef.current) {
-                abortRef.current.abort();
-            }
+            stopPolling();
         };
     }, []);
 
@@ -390,7 +433,7 @@ function CompanyResearchForm() {
                             disabled={loading}
                             className="w-full bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#e8956f] disabled:from-[#e8b59a] disabled:to-[#f0cdb0] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                         >
-                            {loading ? 'Researching... (may take 2–3 min)' : 'Research Company'}
+                            {loading ? (statusMessage || 'Starting...') : 'Research Company'}
                         </button>
 
                         {/* Quick Tips */}
