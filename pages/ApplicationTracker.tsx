@@ -15,7 +15,7 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
             <div className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-[#0D2833] shadow-2xl z-[101] transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between p-6 border-b border-[#D4F1F4] dark:border-[#1A4D5E]">
-                        <h2 className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5]">Menu</h2>
+                        <Link href="/" onClick={onClose} className="text-2xl font-bold text-[#023047] dark:text-[#E0F4F5] hover:text-[#2E86AB] dark:hover:text-[#4A9EBF] transition-colors">Back to Home</Link>
                         <button onClick={onClose} className="p-2 hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] rounded-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -64,13 +64,6 @@ function SidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                             <div>
                                 <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Message Rewriter</h3>
                                 <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Polish professional messages</p>
-                            </div>
-                        </Link>
-                        <Link href="/" className="flex items-center gap-4 p-4 mb-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] transition-all group" onClick={onClose}>
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#FFB703] to-[#FB8500] rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🏠</div>
-                            <div>
-                                <h3 className="font-semibold text-[#023047] dark:text-[#E0F4F5]">Home</h3>
-                                <p className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8]">Back to landing page</p>
                             </div>
                         </Link>
                     </nav>
@@ -755,14 +748,9 @@ export default function ApplicationTracker() {
                 {/* Header */}
                 <header className="bg-white/80 dark:bg-[#0D2833]/80 backdrop-blur-md shadow-lg border-b border-[#D4F1F4] dark:border-[#1A4D5E] sticky top-0 z-50">
                     <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                        <button
-                            onClick={() => setSidePanelOpen(true)}
-                            className="p-2 hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29] rounded-lg transition-all"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#023047] dark:text-[#E0F4F5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
+                        <Link href="/" className="text-lg font-semibold text-[#023047] dark:text-[#E0F4F5] hover:text-[#2E86AB] dark:hover:text-[#4A9EBF] transition-colors px-3 py-2 rounded-lg hover:bg-[#F0F8FA] dark:hover:bg-[#0A1E29]">
+                            Home
+                        </Link>
 
                         <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#06A77D] bg-clip-text text-transparent">
                             Application Tracker

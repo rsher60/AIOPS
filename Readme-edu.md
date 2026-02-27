@@ -514,20 +514,16 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y29udGVudC1lYWdsZS04OC5jbGVyay5hY2NvdW
 
 ### Commands to build and push ECR image with unique tags
 
-
 # 1. Authenticate Docker to ECR
 aws ecr get-login-password --region $DEFAULT_AWS_REGION | \
   docker login --username AWS --password-stdin \
   $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com
 
-# 2. Create a unique tag (using timestamp)
+# 2. Create a unique tag
 IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
-# OR use git commit SHA if you're in a git repo:
-# IMAGE_TAG=$(git rev-parse --short HEAD)
+# IMAGE_TAG=$(git rev-parse --short HEAD)  # preferred in CI/CD
 
-
-
-# 3. Clean up old images (optional)
+# 3. Clean up stale local state
 docker rmi resumegenerator-app:$IMAGE_TAG 2>/dev/null || true
 docker builder prune -f
 
@@ -541,41 +537,82 @@ docker build \
   -t resumegenerator-app:latest \
   .
 
-# 5. Tag for ECR with unique tag AND latest
+# 5. Tag for ECR
 docker tag resumegenerator-app:$IMAGE_TAG \
   $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG
 
 docker tag resumegenerator-app:$IMAGE_TAG \
   $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
 
-# 6. Push BOTH tags to ECR
+# 6. Push both tags
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:latest
 
-# 7. Verify the new image was pushed (check digest)
+# 7. Verify push
 aws ecr describe-images \
   --repository-name resumegenerator-app \
   --region $DEFAULT_AWS_REGION \
   --query 'sort_by(imageDetails,& imagePushedAt)[-1].[imageTags[0], imageDigest, imagePushedAt]' \
   --output table
 
-# 8. Update App Runner to use the specific tag (CRITICAL!)
+# 8. Get service ARN and IAM role ARN
 SERVICE_ARN=$(aws apprunner list-services \
   --region $DEFAULT_AWS_REGION \
   --query 'ServiceSummaryList[0].ServiceArn' \
   --output text)
 
-# Update the service to point to the new specific tag
+# Fetch the existing access role ARN so we don't lose it
+ACCESS_ROLE_ARN=$(aws apprunner describe-service \
+  --service-arn $SERVICE_ARN \
+  --region $DEFAULT_AWS_REGION \
+  --query 'Service.SourceConfiguration.AuthenticationConfiguration.AccessRoleArn' \
+  --output text)
+
+echo "Deploying image tag: $IMAGE_TAG"
+echo "Using IAM role: $ACCESS_ROLE_ARN"
+
+# 9. Trigger deployment with specific tag + auth config
 aws apprunner update-service \
   --service-arn $SERVICE_ARN \
-  --source-configuration "ImageRepository={ImageIdentifier=$AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG,ImageRepositoryType=ECR}" \
-  --region $DEFAULT_AWS_REGION
+  --region $DEFAULT_AWS_REGION \
+  --source-configuration "{
+    \"AuthenticationConfiguration\": {
+      \"AccessRoleArn\": \"$ACCESS_ROLE_ARN\"
+    },
+    \"AutoDeploymentsEnabled\": false,
+    \"ImageRepository\": {
+      \"ImageIdentifier\": \"$AWS_ACCOUNT_ID.dkr.ecr.$DEFAULT_AWS_REGION.amazonaws.com/resumegenerator-app:$IMAGE_TAG\",
+      \"ImageRepositoryType\": \"ECR\"
+    }
+  }"
 
-# 9. Wait for deployment to complete
-aws apprunner wait service-updated --service-arn $SERVICE_ARN --region $DEFAULT_AWS_REGION
+# 10. ✅ Proper polling loop (replaces the broken `wait` command)
+echo "Waiting for deployment to complete..."
+while true; do
+  STATUS=$(aws apprunner describe-service \
+    --service-arn $SERVICE_ARN \
+    --region $DEFAULT_AWS_REGION \
+    --query 'Service.Status' \
+    --output text)
 
-echo "Deployment complete with image tag: $IMAGE_TAG"
+  echo "  Current status: $STATUS"
 
+  if [ "$STATUS" = "RUNNING" ]; then
+    echo "✅ Deployment complete! Image tag: $IMAGE_TAG"
+    break
+  elif [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "UPDATE_FAILED" ] || [ "$STATUS" = "DELETED" ]; then
+    echo "❌ Deployment FAILED with status: $STATUS"
+    # Print recent operation logs for diagnosis
+    aws apprunner list-operations \
+      --service-arn $SERVICE_ARN \
+      --region $DEFAULT_AWS_REGION \
+      --query 'OperationSummaryList[0]' \
+      --output table
+    exit 1
+  fi
+
+  sleep 15
+done
 
 
 
