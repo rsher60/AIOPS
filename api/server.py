@@ -32,6 +32,16 @@ load_dotenv()
 setup_logging()
 logger = get_logger("api")
 
+
+def _log_event_bg(user_id: str, event_type: str, **kwargs) -> None:
+    """Fire log_event in a daemon thread so it never blocks the request path."""
+    threading.Thread(
+        target=log_event,
+        args=(user_id, event_type),
+        kwargs=kwargs,
+        daemon=True,
+    ).start()
+
 app = FastAPI()
 
 # Add CORS middleware (allows frontend to call backend)
@@ -447,7 +457,17 @@ def consultation_summary(
 ):
     user_id = creds.decoded["sub"]
     log_login_if_new(user_id)
-    log_event(user_id, "ai_call", endpoint="/api/consultation", model=request.model)
+    _log_event_bg(
+        user_id, "ai_call",
+        endpoint="/api/consultation",
+        model=request.model,
+        applicant_name=request.applicant_name,
+        role_applied_for=request.role_applied_for,
+        job_description=(request.job_description or "")[:2000],
+        additional_notes=request.additional_notes or "",
+        has_resume_pdf=bool(request.resume_pdf),
+        has_linkedin_pdf=bool(request.linkedin_profile_pdf),
+    )
     logger.info(
         "AI request received",
         extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model},
@@ -546,16 +566,26 @@ def consultation_summary(
 
     def event_stream():
         logger.info("AI stream started", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model})
+        full_response_parts: list[str] = []
         try:
             for chunk in stream:
                 text = chunk.choices[0].delta.content
                 if text:
+                    full_response_parts.append(text)
                     lines = text.split("\n")
                     for line in lines[:-1]:
                         yield f"data: {line}\n\n"
                         yield "data:  \n"
                     yield f"data: {lines[-1]}\n\n"
-            logger.info("AI stream completed", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model})
+            full_response = "".join(full_response_parts)
+            logger.info("AI stream completed", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model, "response_chars": len(full_response)})
+            _log_event_bg(
+                user_id, "ai_response",
+                endpoint="/api/consultation",
+                model=request.model,
+                response_text=full_response[:100_000],
+                response_char_count=len(full_response),
+            )
         except Exception as e:
             logger.error("AI stream error", extra={"endpoint": "/api/consultation", "user_id": user_id, "model": request.model}, exc_info=True)
             raise
@@ -572,7 +602,17 @@ def roadmap_consultation_summary(
 ):
     user_id = creds.decoded["sub"]
     log_login_if_new(user_id)
-    log_event(user_id, "ai_call", endpoint="/api/roadmap_consultation", model=request.model)
+    log_event(
+        user_id, "ai_call",
+        endpoint="/api/roadmap_consultation",
+        model=request.model,
+        current_job_title=request.current_job_title,
+        role_applied_for=request.role_applied_for,
+        time_to_prep_in_months=request.time_to_prep_in_months,
+        additional_notes=request.additional_notes or "",
+        has_resume_pdf=bool(request.resume_pdf),
+        has_linkedin_pdf=bool(request.linkedin_profile_pdf),
+    )
     logger.info(
         "AI request received",
         extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model},
@@ -671,16 +711,26 @@ def roadmap_consultation_summary(
 
     def event_stream():
         logger.info("AI stream started", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model})
+        full_response_parts: list[str] = []
         try:
             for chunk in stream:
                 text = chunk.choices[0].delta.content
                 if text:
+                    full_response_parts.append(text)
                     lines = text.split("\n")
                     for line in lines[:-1]:
                         yield f"data: {line}\n\n"
                         yield "data:  \n"
                     yield f"data: {lines[-1]}\n\n"
-            logger.info("AI stream completed", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model})
+            full_response = "".join(full_response_parts)
+            logger.info("AI stream completed", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model, "response_chars": len(full_response)})
+            log_event(
+                user_id, "ai_response",
+                endpoint="/api/roadmap_consultation",
+                model=request.model,
+                response_text=full_response[:100_000],
+                response_char_count=len(full_response),
+            )
         except Exception as e:
             logger.error("AI stream error", extra={"endpoint": "/api/roadmap_consultation", "user_id": user_id, "model": request.model}, exc_info=True)
             raise
@@ -698,7 +748,16 @@ def rewrite_message(
     """Rewrite a message for professional communication with 3 variations"""
     user_id = creds.decoded["sub"]
     log_login_if_new(user_id)
-    log_event(user_id, "ai_call", endpoint="/api/rewrite-message", model=request.model)
+    log_event(
+        user_id, "ai_call",
+        endpoint="/api/rewrite-message",
+        model=request.model,
+        original_message=request.original_message[:5000],
+        message_type=request.message_type,
+        formality_level=request.formality_level,
+        recipient_type=request.recipient_type,
+        additional_context=request.additional_context or "",
+    )
     logger.info(
         "AI request received",
         extra={
@@ -833,16 +892,26 @@ ORIGINAL MESSAGE:
 
     def event_stream():
         logger.info("AI stream started", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model})
+        full_response_parts: list[str] = []
         try:
             for chunk in stream:
                 text = chunk.choices[0].delta.content
                 if text:
+                    full_response_parts.append(text)
                     lines = text.split("\n")
                     for line in lines[:-1]:
                         yield f"data: {line}\n\n"
                         yield "data:  \n"
                     yield f"data: {lines[-1]}\n\n"
-            logger.info("AI stream completed", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model})
+            full_response = "".join(full_response_parts)
+            logger.info("AI stream completed", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model, "response_chars": len(full_response)})
+            log_event(
+                user_id, "ai_response",
+                endpoint="/api/rewrite-message",
+                model=request.model,
+                response_text=full_response[:100_000],
+                response_char_count=len(full_response),
+            )
         except Exception as e:
             logger.error("AI stream error", extra={"endpoint": "/api/rewrite-message", "user_id": user_id, "model": request.model}, exc_info=True)
             raise
@@ -1019,7 +1088,14 @@ def company_research(
     """
     user_id = creds.decoded["sub"]
     log_login_if_new(user_id)
-    log_event(user_id, "ai_call", endpoint="/api/company-research", model=request.model)
+    log_event(
+        user_id, "ai_call",
+        endpoint="/api/company-research",
+        model=request.model,
+        company_name=request.company_name,
+        target_role=request.target_role or "",
+        research_focus=request.research_focus or "",
+    )
     logger.info(
         "Company research task submitted",
         extra={"user_id": user_id, "model": request.model, "company": request.company_name},
@@ -1050,7 +1126,16 @@ def company_research(
                 content = _run_simple_research(request, user_prompt)
             _research_tasks[task_id]["content"] = content
             _research_tasks[task_id]["status"] = "done"
-            logger.info("Company research task completed", extra={"task_id": task_id, "user_id": user_id})
+            logger.info("Company research task completed", extra={"task_id": task_id, "user_id": user_id, "response_chars": len(content)})
+            log_event(
+                user_id, "ai_response",
+                endpoint="/api/company-research",
+                model=request.model,
+                company_name=request.company_name,
+                target_role=request.target_role or "",
+                response_text=content[:100_000],
+                response_char_count=len(content),
+            )
         except Exception as exc:
             _research_tasks[task_id]["error"] = str(exc)
             _research_tasks[task_id]["status"] = "failed"

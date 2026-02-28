@@ -1094,3 +1094,18 @@ required changes to make sure that it works. I believe its because of the conver
   - prompts/resume_generator_prompt.py: Added LinkedIn as input source, added DATA PRIORITY RULES section (contact info priority:
    Resume > LinkedIn), added LINKEDIN-SPECIFIC DATA TO EXTRACT section, updated all output sections with LinkedIn integration    
   instructions, updated AI Enhancements Summary to explain source decisions 
+
+
+
+  ### how I reduced latency 
+
+  Before: Every call to /api/consultation blocked on two synchronous DynamoDB writes — one before the stream started (ai_call)
+   and one after it ended (ai_response). Each write first made a blocking HTTP request to the Clerk API to fetch user info    
+  (50–500ms), then a blocking network call to DynamoDB (~5–50ms). The ai_call write sat directly on the critical path, meaning
+   users waited for all of that before seeing the first token of their resume.                                                
+                                                                                                                              
+  After: Both log_event calls are handed off to daemon threads via _log_event_bg and return in microseconds. The Clerk HTTP   
+  call and DynamoDB write now happen concurrently while OpenAI is already processing the prompt and streaming back tokens. The
+   ai_response write at the end of the stream similarly no longer holds the connection open waiting for analytics to finish.  
+  The actual analytics data captured is identical — only the timing is changed.                                               
+                                                                                      
