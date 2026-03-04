@@ -154,8 +154,6 @@ export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [expandedFeature, setExpandedFeature] = useState<number | null>(null);
-  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   const fullText = "Transform Your Career with AI";
 
@@ -184,56 +182,43 @@ export default function Home() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const stats = [
-    { number: 100, label: "AI Generations", suffix: "+" },
-    { number: 3, label: "AI Models", suffix: "" },
-    { number: 50, label: "Active Users", suffix: "+" },
-  ];
-
   const features = [
     {
       icon: "📋",
       title: "AI Resume Generation",
-      shortDescription: "Professional, ATS-optimized resumes in seconds",
-      fullDescription: "Generate professional, ATS-optimized resumes tailored to specific roles using GPT-4, Grok, or Llama AI models with real-time streaming",
+      shortDescription: "Professional, ATS-optimized resumes tailored to any role",
+      fullDescription: "Generate professional, ATS-optimized resumes tailored to specific roles using GPT-4o-mini, Grok, or Llama AI models with real-time streaming",
       color: "from-[#2E86AB] to-[#4A9EBF]"
     },
     {
       icon: "🗺️",
       title: "Career Roadmap Planning",
-      shortDescription: "Personalized career transition plans with resources",
+      shortDescription: "Personalized month-by-month career transition plans",
       fullDescription: "Get personalized month-by-month career transition plans with learning resources, project ideas, and interview preparation strategies",
       color: "from-[#52B788] to-[#74C69D]"
     },
     {
       icon: "📊",
       title: "Application Tracking",
-      shortDescription: "Track applications with status updates and reminders",
-      fullDescription: "Organize and track all your job applications with status updates, notes, and follow-up reminders in one centralized dashboard",
+      shortDescription: "Track every application, status, and note in one place",
+      fullDescription: "Organize and track all your job applications with status updates and notes in one centralized dashboard backed by AWS S3",
       color: "from-[#06A77D] to-[#2E86AB]"
     },
+    {
+      icon: "🔍",
+      title: "Company Research",
+      shortDescription: "Deep AI research on any company before your interview",
+      fullDescription: "Get comprehensive intelligence on company culture, interview process, recent news, and compensation — powered by live web search and AI synthesis",
+      color: "from-[#E63946] to-[#F4A261]"
+    },
+    {
+      icon: "✍️",
+      title: "Message Rewriter",
+      shortDescription: "Polish cold outreaches, follow-ups, and negotiations",
+      fullDescription: "Rewrite any professional message — referral requests, cold outreach, salary negotiations — into 3 distinct variations tuned to your formality level and recipient",
+      color: "from-[#9B59B6] to-[#BB6BD9]"
+    },
   ];
-
-  const [animatedStats, setAnimatedStats] = useState(stats.map(() => 0));
-
-  useEffect(() => {
-    stats.forEach((stat, index) => {
-      let current = 0;
-      const increment = stat.number / 50;
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= stat.number) {
-          current = stat.number;
-          clearInterval(timer);
-        }
-        setAnimatedStats(prev => {
-          const newStats = [...prev];
-          newStats[index] = Math.floor(current);
-          return newStats;
-        });
-      }, 30);
-    });
-  }, []);
 
   return (
     <>
@@ -346,90 +331,81 @@ export default function Home() {
             Create professional resumes, plan your career, track applications—all powered by AI
           </p>
 
-          {/* Visual Demo Section */}
-          <div className="max-w-4xl mx-auto mb-12">
-            <div className="relative bg-white/70 dark:bg-[#0D2833]/70 backdrop-blur-sm rounded-2xl shadow-2xl border-2 border-[#2E86AB] dark:border-[#4A9EBF] p-8 hover:shadow-3xl transition-all">
-              <a
-                href="https://resumegenapp.s3.amazonaws.com/resumegen-userguide.mp4"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute -top-4 -right-4 bg-gradient-to-r from-[#52B788] to-[#74C69D] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
-              >
-                ✨ See it in action
-              </a>
-              <div className="aspect-video bg-gradient-to-br from-[#E8F4F5] to-[#D4F1F4] dark:from-[#0A1E29] dark:to-[#071821] rounded-xl flex items-center justify-center border border-[#D4F1F4] dark:border-[#1A4D5E] overflow-hidden">
-                <Image
-                  src="/landingpage_visual.png"
-                  alt="Watch Resume Generation in Real-Time"
-                  width={1200}
-                  height={675}
-                  className="w-full h-full object-cover rounded-xl"
-                />
-              </div>
-            </div>
-          </div>
+          {/* Features — donut visual */}
+          <div className="max-w-5xl mx-auto mb-16 relative">
+            <a
+              href="https://resumegenapp.s3.amazonaws.com/resumegen-userguide.mp4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute -top-2 right-0 bg-gradient-to-r from-[#52B788] to-[#74C69D] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer z-20"
+            >
+              ✨ See it in action
+            </a>
 
-          {/* Animated Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
-            {stats.map((stat, index) => (
-              <div
-                key={index}
-                className="bg-white/50 dark:bg-[#0D2833]/50 backdrop-blur-md p-8 rounded-2xl border border-[#D4F1F4] dark:border-[#1A4D5E] shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
-                }}
-              >
-                <div className="text-4xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent mb-2">
-                  {animatedStats[index]}{stat.suffix}
+       
+              {/* Desktop: hub-and-spoke */}
+              <div className="hidden md:block relative w-full max-w-[875px] mx-auto" style={{ aspectRatio: '1' }}>
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 560 560" fill="none">
+                  <circle cx="280" cy="280" r="192" stroke="#5A8A9F" strokeWidth="1.5" strokeDasharray="5 6" />
+                  <circle cx="280" cy="280" r="88" stroke="#5A8A9F" strokeWidth="1.5" strokeDasharray="5 6" />
+                  {features.map((_, i) => {
+                    const a = ((-90 + i * 72) * Math.PI) / 180;
+                    return (
+                      <line
+                        key={i}
+                        x1="280" y1="280"
+                        x2={280 + 192 * Math.cos(a)}
+                        y2={280 + 192 * Math.sin(a)}
+                        stroke="#5A8A9F" strokeWidth="1.5"
+                      />
+                    );
+                  })}
+                </svg>
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[120px] rounded-full bg-gradient-to-br from-[#2E86AB] to-[#06A77D] flex flex-col items-center justify-center text-white shadow-xl z-10">
+                  <div className="text-2xl mb-1">🚀</div>
+                  <div className="text-[11px] font-bold text-center leading-tight px-2">Your Career<br />Assistant</div>
                 </div>
-                <div className="text-sm text-[#5A8A9F] dark:text-[#7FA8B8] font-medium">
-                  {stat.label}
+
+                {/* Orbit wrapper — rotates all icons; each icon counter-rotates to stay upright */}
+                <div className="absolute inset-0" style={{ animation: 'donut-orbit 28s linear infinite' }}>
+                  {features.map((feature, index) => {
+                    const a = ((-90 + index * 72) * Math.PI) / 180;
+                    const rIcon = 192;
+                    const xIconPct = ((280 + rIcon * Math.cos(a)) / 560) * 100;
+                    const yIconPct = ((280 + rIcon * Math.sin(a)) / 560) * 100;
+                    return (
+                      <div
+                        key={index}
+                        className="absolute z-10 group"
+                        style={{ left: `${xIconPct}%`, top: `${yIconPct}%`, animation: 'donut-counter 28s linear infinite' }}
+                      >
+                        <div className={`w-20 h-20 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center text-4xl shadow-lg transition-transform duration-200 group-hover:scale-[1.15] cursor-default`}>
+                          {feature.icon}
+                        </div>
+                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-[#023047] dark:bg-[#E0F4F5] text-white dark:text-[#023047] text-xs font-semibold px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-30">
+                          {feature.title}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Features Grid with staggered animation */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className={`relative group transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                style={{
-                  transitionDelay: `${400 + index * 150}ms`
-                }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-all duration-500 scale-95 group-hover:scale-100`}></div>
-                <div className={`relative bg-white dark:bg-[#0D2833] p-8 rounded-2xl shadow-lg border-2 transition-all duration-300 ${
-                  expandedFeature === index ? 'border-[#2E86AB] dark:border-[#4A9EBF] shadow-2xl' : 'border-[#D4F1F4] dark:border-[#1A4D5E] hover:scale-105 transform'
-                }`}>
-                  <div className="text-5xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
-                    {feature.icon}
+              {/* Mobile: simple list */}
+              <div className="md:hidden space-y-3">
+                {features.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-4 p-4 bg-white dark:bg-[#0D2833] rounded-xl border border-[#D4F1F4] dark:border-[#1A4D5E] shadow-sm">
+                    <div className={`w-10 h-10 bg-gradient-to-br ${feature.color} rounded-lg flex items-center justify-center text-lg flex-shrink-0`}>
+                      {feature.icon}
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-sm text-[#023047] dark:text-[#E0F4F5]">{feature.title}</div>
+                      <div className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8] mt-0.5">{feature.shortDescription}</div>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-3 text-[#023047] dark:text-[#E0F4F5]">
-                    {feature.title}
-                  </h3>
-                  <p className="text-[#5A8A9F] dark:text-[#7FA8B8] mb-3">
-                    {expandedFeature === index ? feature.fullDescription : feature.shortDescription}
-                  </p>
-                  <button
-                    onClick={() => setExpandedFeature(expandedFeature === index ? null : index)}
-                    className="text-[#2E86AB] dark:text-[#4A9EBF] text-sm font-semibold hover:underline flex items-center gap-1 transition-all"
-                  >
-                    {expandedFeature === index ? 'Show less' : 'Learn more'}
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-300 ${expandedFeature === index ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="mt-4 h-1 bg-gradient-to-r from-transparent via-[#2E86AB] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </div>
+                ))}
               </div>
-            ))}
           </div>
 
           {/* Quick Action Buttons */}
@@ -448,29 +424,33 @@ export default function Home() {
                 </Link>
               </div>
             </SignedIn>
+            <SignedOut>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <SignInButton mode="modal">
+                  <button className="bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] hover:from-[#1B6B8F] hover:to-[#3A8CB0] text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-xl">
+                    Get Started Free →
+                  </button>
+                </SignInButton>
+                <a
+                  href="https://resumegenapp.s3.amazonaws.com/resumegen-userguide.mp4"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-2 border-[#2E86AB] dark:border-[#4A9EBF] text-[#2E86AB] dark:text-[#4A9EBF] font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 hover:bg-[#2E86AB] hover:text-white text-center"
+                >
+                  Watch Demo
+                </a>
+              </div>
+            </SignedOut>
           </div>
         </div>
 
         {/* How It Works Section */}
         <div className="max-w-6xl mx-auto mb-16">
-          <button
-            onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="w-full flex items-center justify-center gap-3 bg-white/50 dark:bg-[#0D2833]/50 backdrop-blur-md p-6 rounded-2xl border-2 border-[#D4F1F4] dark:border-[#1A4D5E] hover:border-[#2E86AB] dark:hover:border-[#4A9EBF] transition-all mb-6 group"
-          >
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent">
-              How It Works
-            </h2>
-            <svg
-              className={`w-6 h-6 text-[#2E86AB] dark:text-[#4A9EBF] transition-transform duration-300 ${showHowItWorks ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+          <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-[#2E86AB] to-[#4A9EBF] bg-clip-text text-transparent mb-8">
+            How It Works
+          </h2>
 
-          <div className={`grid md:grid-cols-4 gap-6 transition-all duration-500 pt-4 ${showHowItWorks ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="grid md:grid-cols-4 gap-6 pt-4">
             {[
               { step: "1", title: "Sign Up", icon: "👤", desc: "Create your account with Clerk authentication" },
               { step: "2", title: "Choose Your Tool", icon: "🎯", desc: "Resume Generator, Career Roadmap, or Application Tracker" },
@@ -587,6 +567,16 @@ export default function Home() {
           50% {
             background-position: 100% 50%;
           }
+        }
+
+        @keyframes donut-orbit {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+
+        @keyframes donut-counter {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to   { transform: translate(-50%, -50%) rotate(-360deg); }
         }
       `}</style>
     </main>
