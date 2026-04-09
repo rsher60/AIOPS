@@ -17,7 +17,10 @@ Human Evaluation
   3.2 — ATS Simulation
 
   Pick 5–10 real job descriptions for common target roles. Run the generated resume through an ATS simulator (Jobscan or
-  similar). Measure keyword match rate. Target: ≥ 70% match for exact-match keywords from the job description.
+  similar). Measure keyword match rate. Target: ≥ 70% match for exact-match keywords from the job description. 
+
+Eval 1 : How many of the keywrods in the user's resume are there in the Final generated Resume
+Eval 2: If the person uploads a Job description, how many of those are in the final generated Resume
 
   3.3 — Annotation Rubric for Blind Scoring
 

@@ -21,6 +21,7 @@ from botocore.exceptions import ClientError
 from saas.prompts.resume_generator_prompt import system_prompt
 from saas.prompts.message_rewriter_prompt import message_rewriter_system_prompt
 from saas.prompts.company_research_prompt import company_research_system_prompt
+from saas.prompts.ats_scorer_prompt import ats_scorer_system_prompt
 from saas.logger import setup_logging, get_logger, correlation_id_var
 from saas.analytics import log_event, log_login_if_new
 from tavily import TavilyClient
@@ -121,6 +122,17 @@ class ResumeRequest(BaseModel):
     job_description: str | None = None
     additional_notes: str
     model: str
+
+
+class ATSScoreRequest(BaseModel):
+    resume_text: str | None = None          # plain text/markdown — for re-scoring generated resume
+    resume_pdf: str | None = None           # base64 PDF — for Step 1 original upload
+    resume_filename: str | None = None
+    linkedin_profile_pdf: str | None = None
+    linkedin_filename: str | None = None
+    job_description: str | None = None
+    role_applied_for: str | None = None
+    model: str = "gpt-4o-mini"             # accepted but ignored — scoring always uses gpt-4o-mini for json_object mode
 
 
 class RoadmapRequest(BaseModel):
@@ -447,6 +459,108 @@ def user_prompt_for_roadmap(request: RoadmapRequest) -> str:
     ])
 
     return "\n".join(prompt_parts)
+
+
+def build_ats_score_prompt(request: ATSScoreRequest, resume_text: str, linkedin_text: str | None) -> str:
+    parts = ["Score the following resume for ATS compatibility."]
+    if request.role_applied_for:
+        parts.append(f"Target Role: {request.role_applied_for}")
+    parts += ["", "=== RESUME CONTENT ===", resume_text, "=== END OF RESUME ==="]
+    if linkedin_text:
+        parts += [
+            "",
+            "=== LINKEDIN PROFILE (supplementary context) ===",
+            linkedin_text,
+            "=== END OF LINKEDIN ===",
+        ]
+    if request.job_description:
+        parts += [
+            "",
+            "=== JOB DESCRIPTION ===",
+            request.job_description,
+            "=== END OF JOB DESCRIPTION ===",
+        ]
+    else:
+        parts += [
+            "",
+            "NOTE: No job description was provided. Set keyword_matching.score = 0 and keyword_matching.max = 0. "
+            "Score only structural and formatting quality for the remaining categories.",
+        ]
+    return "\n".join(parts)
+
+
+# API endpoint for ATS scoring
+@app.post("/api/ats-score")
+def ats_score(
+    request: ATSScoreRequest,
+    creds: HTTPAuthorizationCredentials = Depends(clerk_guard),
+):
+    user_id = creds.decoded["sub"]
+    log_login_if_new(user_id)
+    _log_event_bg(
+        user_id, "ai_call",
+        endpoint="/api/ats-score",
+        model="gpt-4o-mini",
+        has_resume_pdf=bool(request.resume_pdf),
+        has_resume_text=bool(request.resume_text),
+        has_job_description=bool(request.job_description),
+        role_applied_for=request.role_applied_for or "",
+    )
+    logger.info(
+        "ATS score request received",
+        extra={"endpoint": "/api/ats-score", "user_id": user_id},
+    )
+
+    if not request.resume_text and not request.resume_pdf:
+        raise HTTPException(status_code=422, detail="Either resume_text or resume_pdf is required")
+
+    if request.resume_text:
+        resume_text = request.resume_text
+    else:
+        resume_text = parse_file_content(request.resume_pdf, request.resume_filename)
+
+    linkedin_text = None
+    if request.linkedin_profile_pdf:
+        linkedin_text = parse_file_content(request.linkedin_profile_pdf, request.linkedin_filename)
+
+    user_prompt = build_ats_score_prompt(request, resume_text, linkedin_text)
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key or api_key.startswith("your_"):
+        raise HTTPException(status_code=400, detail="OpenAI API key not configured")
+
+    client = OpenAI(api_key=api_key)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": ats_scorer_system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=2000,
+    )
+
+    raw_json = response.choices[0].message.content
+    try:
+        result = json.loads(raw_json)
+    except json.JSONDecodeError:
+        logger.error("ATS score JSON parse failed", extra={"user_id": user_id, "raw": raw_json[:500]})
+        raise HTTPException(status_code=500, detail="ATS scoring returned invalid JSON")
+
+    required_keys = {"overall_score", "categories", "red_flags", "top_improvements"}
+    if not required_keys.issubset(result.keys()):
+        logger.error("ATS score response missing required keys", extra={"user_id": user_id, "keys": list(result.keys())})
+        raise HTTPException(status_code=500, detail="ATS scoring response was malformed")
+
+    _log_event_bg(
+        user_id, "ai_response",
+        endpoint="/api/ats-score",
+        model="gpt-4o-mini",
+        overall_score=result.get("overall_score"),
+        has_job_description=bool(request.job_description),
+    )
+    logger.info("ATS score completed", extra={"user_id": user_id, "overall_score": result.get("overall_score")})
+    return result
 
 
 # API endpoint for resume consultation
