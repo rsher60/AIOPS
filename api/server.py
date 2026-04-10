@@ -126,7 +126,7 @@ class ResumeRequest(BaseModel):
 
 class ATSScoreRequest(BaseModel):
     resume_text: str | None = None          # plain text/markdown — for re-scoring generated resume
-    resume_pdf: str | None = None           # base64 PDF — for Step 1 original upload
+    resume_pdf: str | None = None           # base64 PDF — for Step 1 original upload or if user prefers PDF upload over text input
     resume_filename: str | None = None
     linkedin_profile_pdf: str | None = None
     linkedin_filename: str | None = None
