@@ -25,6 +25,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Verify Clerk key is set
+        env:
+          CLERK_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$CLERK_KEY" ]; then
+            echo "ERROR: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY secret is not set or is empty!"
+            exit 1
+          fi
+          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is set (length: ${#CLERK_KEY})"
+
       - name: Build, tag, and push Docker image to ECR
         id: build-image
         env:

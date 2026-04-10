@@ -1108,4 +1108,6 @@ required changes to make sure that it works. I believe its because of the conver
   call and DynamoDB write now happen concurrently while OpenAI is already processing the prompt and streaming back tokens. The
    ai_response write at the end of the stream similarly no longer holds the connection open waiting for analytics to finish.  
   The actual analytics data captured is identical — only the timing is changed.                                               
-                                                                                      
+
+  I need to add the secrets to the github
+                                                                                  
