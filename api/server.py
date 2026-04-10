@@ -3,7 +3,7 @@ import base64
 import io
 import json
 import time
-import uuid
+import uuid # for generating unique correlation IDs for request tracing
 import threading
 from pathlib import Path
 from datetime import datetime, timezone
