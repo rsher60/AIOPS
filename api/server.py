@@ -217,6 +217,7 @@ _MIME_MAP = {
     "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
     "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp", "tiff": "image/tiff",
 }
+_DOC_EXTENSIONS = {"doc", "docx"}
 
 
 def extract_text_with_ocr(file_bytes: bytes, filename: str | None = None) -> str:
@@ -294,9 +295,43 @@ def extract_text_with_ocr(file_bytes: bytes, filename: str | None = None) -> str
     return full_text
 
 
+def parse_docx_content(file_bytes: bytes) -> str:
+    """
+    Extract text from a .docx (or .doc) file using python-docx.
+
+    Args:
+        file_bytes: Raw bytes of the Word document
+
+    Returns:
+        Extracted text string
+    """
+    try:
+        from docx import Document as DocxDocument
+        doc = DocxDocument(io.BytesIO(file_bytes))
+        parts: list[str] = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                parts.append(para.text)
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        parts.append(cell.text)
+        full_text = "\n\n".join(parts)
+        logger.debug("parse_docx_content: succeeded", extra={"char_count": len(full_text)})
+        return full_text
+    except Exception as e:
+        logger.error("DOCX parsing failed", extra={"error_type": type(e).__name__}, exc_info=True)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error parsing Word document: {str(e)}. Please convert to PDF and try again.",
+        )
+
+
 def parse_file_content(base64_file: str, filename: str | None = None) -> str:
     """
     Hybrid file parser. Strategy:
+    - Word documents (.doc, .docx) → python-docx text extraction.
     - Image files (.jpg, .png, etc.) → OCR via GPT-4o-mini Vision directly.
     - PDFs → try PyPDF2 text extraction first (fast, free).
               If extracted text is sparse (<200 chars, likely a scanned PDF),
@@ -304,7 +339,7 @@ def parse_file_content(base64_file: str, filename: str | None = None) -> str:
 
     Args:
         base64_file: Base64-encoded file content
-        filename:    Original filename (used to detect images vs PDFs)
+        filename:    Original filename (used to detect file type)
 
     Returns:
         Extracted text string
@@ -312,6 +347,10 @@ def parse_file_content(base64_file: str, filename: str | None = None) -> str:
     try:
         file_bytes = base64.b64decode(base64_file)
         ext = (filename or "").lower().rsplit(".", 1)[-1]
+
+        if ext in _DOC_EXTENSIONS:
+            logger.debug("parse_file_content: Word document detected, using python-docx", extra={"ext": ext})
+            return parse_docx_content(file_bytes)
 
         if ext in _IMAGE_EXTENSIONS:
             logger.debug("parse_file_content: image detected, using OCR", extra={"ext": ext})

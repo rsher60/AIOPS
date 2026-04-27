@@ -110,6 +110,16 @@ function RoadmapGenerationForm() {
         }
     };
 
+    const isValidResumeFile = (file: File) => {
+        const validTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        return validTypes.includes(file.type) || ext === 'doc' || ext === 'docx' || ext === 'pdf';
+    };
+
     // Handle file drop
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
@@ -118,10 +128,10 @@ function RoadmapGenerationForm() {
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setResumeFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -130,10 +140,10 @@ function RoadmapGenerationForm() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setResumeFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -165,10 +175,10 @@ function RoadmapGenerationForm() {
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setLinkedinFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -177,10 +187,10 @@ function RoadmapGenerationForm() {
     const handleLinkedinFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setLinkedinFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -348,8 +358,8 @@ function RoadmapGenerationForm() {
                 formData.resume_pdf = base64;
                 formData.resume_filename = resumeFile.name;
             } catch (error) {
-                console.error('Error reading PDF file:', error);
-                setOutput('Error reading PDF file. Please try again.');
+                console.error('Error reading file:', error);
+                setOutput('Error reading file. Please try again.');
                 setLoading(false);
                 return;
             }
@@ -362,8 +372,8 @@ function RoadmapGenerationForm() {
                 formData.linkedin_profile_pdf = base64;
                 formData.linkedin_profile_filename = linkedinFile.name;
             } catch (error) {
-                console.error('Error reading LinkedIn PDF file:', error);
-                setOutput('Error reading LinkedIn PDF file. Please try again.');
+                console.error('Error reading LinkedIn file:', error);
+                setOutput('Error reading LinkedIn file. Please try again.');
                 setLoading(false);
                 return;
             }
@@ -579,7 +589,7 @@ function RoadmapGenerationForm() {
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept=".pdf"
+                                    accept=".pdf,.doc,.docx"
                                     onChange={handleFileChange}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
@@ -617,7 +627,7 @@ function RoadmapGenerationForm() {
                                             <span className="font-semibold">Click to upload</span> or drag and drop
                                         </p>
                                         <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                            PDF files only (optional)
+                                            PDF, DOC, or DOCX (optional)
                                         </p>
                                     </div>
                                 )}
@@ -645,7 +655,7 @@ function RoadmapGenerationForm() {
                                 <input
                                     ref={linkedinFileInputRef}
                                     type="file"
-                                    accept=".pdf"
+                                    accept=".pdf,.doc,.docx"
                                     onChange={handleLinkedinFileChange}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
@@ -683,7 +693,7 @@ function RoadmapGenerationForm() {
                                             <span className="font-semibold">Click to upload</span> or drag and drop
                                         </p>
                                         <p className="mt-1 text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">
-                                            LinkedIn PDF export (optional)
+                                            PDF, DOC, or DOCX (optional)
                                         </p>
                                     </div>
                                 )}

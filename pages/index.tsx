@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
@@ -176,12 +176,7 @@ const testimonials = [
 ];
 
 export default function Home() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [sidePanelOpen, setSidePanelOpen] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);;
 
   return (
     <>
@@ -220,7 +215,7 @@ export default function Home() {
         <div className="relative z-10">
 
           {/* ── NAV ── */}
-          <nav className={`container mx-auto px-6 pt-8 pb-4 flex justify-between items-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+          <nav className="container mx-auto px-6 pt-8 pb-4 flex justify-between items-center animate-fade-down">
             <button
               onClick={() => setSidePanelOpen(true)}
               className="flex items-center gap-2 bg-white/80 dark:bg-[#0D2833]/80 backdrop-blur-sm border border-[#D4F1F4] dark:border-[#1A4D5E] text-[#023047] dark:text-[#E0F4F5] font-medium py-2 px-4 rounded-lg transition-all shadow-sm hover:shadow-md hover:scale-105"
@@ -247,7 +242,7 @@ export default function Home() {
           </nav>
 
           {/* ── HERO ── */}
-          <section className={`container mx-auto px-6 pt-10 pb-20 transition-all duration-1000 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <section className="container mx-auto px-6 pt-10 pb-20 animate-fade-up">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
 
               {/* Left: copy */}
@@ -551,6 +546,20 @@ export default function Home() {
             0%, 100% { transform: translate(0, 0) scale(1); }
             33% { transform: translate(30px, -40px) scale(1.04); }
             66% { transform: translate(-20px, 20px) scale(0.96); }
+          }
+          @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(32px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          :global(.animate-fade-down) {
+            animation: fadeDown 0.7s ease-out both;
+          }
+          :global(.animate-fade-up) {
+            animation: fadeUp 1s ease-out 0.1s both;
           }
         `}</style>
       </main>

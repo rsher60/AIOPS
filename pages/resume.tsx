@@ -10,6 +10,44 @@ import remarkBreaks from 'remark-breaks';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { UserButton } from '@clerk/nextjs';
 
+// ─── Resume/AI-enhancements buffer parsing ────────────────────────────────────
+
+function stripCodeFences(text: string): string {
+    return text
+        .replace(/^```[a-zA-Z]*\n?/, '')   // opening fence
+        .replace(/\n?```\s*$/, '');          // closing fence
+}
+
+// Remove any stray marker keywords that should never appear in the resume body
+function stripMarkerKeywords(text: string): string {
+    return text
+        .replace(/---AI_ENHANCEMENTS_START---/g, '')
+        // covers _AI_ENHANCEMENT_SUMMARY__, __AI_ENHANCEMENTS_SUMMARY__, 4. _AI_ENHANCEMENT_SUMMARY__, etc.
+        .replace(/(?:\d+\.\s*)?_+AI_ENHANCEMENTS?_SUMMARY_+/gi, '')
+        .trim();
+}
+
+// Regex covering all known delimiter variants
+const DELIMITER_REGEX = /---AI_ENHANCEMENTS_START---|(?:\d+\.\s*)?_+AI_ENHANCEMENTS?_SUMMARY_+/i;
+
+function parseResumeBuffer(buffer: string): { resume: string; changes: string; found: boolean } {
+    const match = DELIMITER_REGEX.exec(buffer);
+    if (match && match.index !== undefined) {
+        return {
+            resume: stripMarkerKeywords(stripCodeFences(buffer.substring(0, match.index).trim())),
+            changes: stripCodeFences(buffer.substring(match.index + match[0].length).trim()),
+            found: true,
+        };
+    }
+    return {
+        resume: stripMarkerKeywords(stripCodeFences(buffer)),
+        changes: '',
+        found: false,
+    };
+}
+
+// ─── ATS scoring types ────────────────────────────────────────────────────────
+
 // ATS scoring types
 type ATSCategory = { score: number; max: number; label: string; feedback: string };
 type ATSRedFlag = { type: string; severity: 'high' | 'medium' | 'low'; message: string };
@@ -293,6 +331,8 @@ function ResumeGenerationForm() {
     const linkedinFileInputRef = useRef<HTMLInputElement | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formDataRef = useRef<any>(null);
+    // Tracks the latest SSE buffer so onclose can do a final parse
+    const bufferRef = useRef('');
 
     // Handle file drag events
     const handleDrag = (e: React.DragEvent) => {
@@ -305,6 +345,16 @@ function ResumeGenerationForm() {
         }
     };
 
+    const isValidResumeFile = (file: File) => {
+        const validTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        return validTypes.includes(file.type) || ext === 'doc' || ext === 'docx' || ext === 'pdf';
+    };
+
     // Handle file drop
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
@@ -313,10 +363,10 @@ function ResumeGenerationForm() {
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setResumeFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -325,10 +375,10 @@ function ResumeGenerationForm() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setResumeFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -360,10 +410,10 @@ function ResumeGenerationForm() {
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setLinkedinFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -372,10 +422,10 @@ function ResumeGenerationForm() {
     const handleLinkedinFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            if (file.type === 'application/pdf') {
+            if (isValidResumeFile(file)) {
                 setLinkedinFile(file);
             } else {
-                alert('Please upload a PDF file');
+                alert('Please upload a PDF, DOC, or DOCX file');
             }
         }
     };
@@ -421,6 +471,7 @@ function ResumeGenerationForm() {
             console.log('Connecting with fresh token...');
 
             let buffer = '';
+            bufferRef.current = '';
 
             await fetchEventSource('/api/consultation', {
                 signal: controllerRef.current.signal,
@@ -433,31 +484,14 @@ function ResumeGenerationForm() {
                 onmessage(ev) {
                     console.log('Received message:', ev.data);
                     buffer += ev.data;
+                    bufferRef.current = buffer;
 
-                    // Some models (e.g. GPT-4o-mini) wrap the entire output in a
-                    // ```markdown ... ``` code fence. Strip it so ReactMarkdown renders
-                    // the content as formatted markdown rather than a raw code block.
-                    const stripCodeFences = (text: string): string =>
-                        text
-                            .replace(/^```[a-zA-Z]*\n?/, '')  // opening fence
-                            .replace(/\n?```\s*$/, '');        // closing fence
-
-                    // Check if delimiter exists in buffer
-                    const delimiterIndex = buffer.indexOf('---AI_ENHANCEMENTS_START---');
-
-                    if (delimiterIndex !== -1) {
-                        // Split into resume and AI changes
-                        const resume = stripCodeFences(buffer.substring(0, delimiterIndex).trim());
-                        const changes = stripCodeFences(buffer.substring(delimiterIndex + '---AI_ENHANCEMENTS_START---'.length).trim());
-
-                        setResumeContent(resume);
-                        setAiChanges(changes);
+                    const parsed = parseResumeBuffer(buffer);
+                    setResumeContent(parsed.resume);
+                    if (parsed.found) {
+                        setAiChanges(parsed.changes);
                         setShowAiChanges(true);
-                    } else {
-                        // Delimiter not found yet, all content is resume
-                        setResumeContent(stripCodeFences(buffer));
                     }
-
                     setOutput(buffer);
                 },
                 onerror(err) {
@@ -499,6 +533,15 @@ function ResumeGenerationForm() {
                     console.log('SSE connection closed');
                     isConnectingRef.current = false;
                     setLoading(false);
+                    // Final parse: guarantees the split is applied even if the delimiter
+                    // arrived in the very last SSE chunk (onmessage may have run before the
+                    // buffer was fully flushed on some model responses).
+                    const parsed = parseResumeBuffer(bufferRef.current);
+                    setResumeContent(parsed.resume);
+                    if (parsed.found) {
+                        setAiChanges(parsed.changes);
+                        setShowAiChanges(true);
+                    }
                     setWorkflowStep('complete');
                 }
             });
@@ -864,7 +907,7 @@ function ResumeGenerationForm() {
                                         <input
                                             ref={fileInputRef}
                                             type="file"
-                                            accept=".pdf"
+                                            accept=".pdf,.doc,.docx"
                                             onChange={handleFileChange}
                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         />
@@ -887,8 +930,8 @@ function ResumeGenerationForm() {
                                                 <svg className="mx-auto h-8 w-8 text-[#5A8A9F] dark:text-[#7FA8B8]" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                                                 </svg>
-                                                <p className="mt-1 text-xs font-semibold text-[#023047] dark:text-[#E0F4F5]">Resume PDF *</p>
-                                                <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">Click or drag</p>
+                                                <p className="mt-1 text-xs font-semibold text-[#023047] dark:text-[#E0F4F5]">Resume *</p>
+                                                <p className="text-xs text-[#5A8A9F] dark:text-[#7FA8B8]">PDF, DOC, DOCX</p>
                                             </div>
                                         )}
                                     </div>
@@ -908,7 +951,7 @@ function ResumeGenerationForm() {
                                         <input
                                             ref={linkedinFileInputRef}
                                             type="file"
-                                            accept=".pdf"
+                                            accept=".pdf,.doc,.docx"
                                             onChange={handleLinkedinFileChange}
                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         />
